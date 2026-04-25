@@ -274,7 +274,7 @@ function PortfolioRiskDashboard({ portfolioId }: PortfolioRiskDashboardProps) {
                     <Cell key={entry.sector} fill={chartColors[index % chartColors.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number | string) => `${Number(value).toFixed(1)}%`} />
+                <Tooltip formatter={(value: any) => `${value ? Number(value).toFixed(1) : '0'}%`} />
               </PieChart>
             </ResponsiveContainer>
           </div>
