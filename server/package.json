@@ -7,6 +7,7 @@
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "migrate": "node scripts/runMigrations.js",
+    "seed": "node scripts/seed.js",
     "lint": "node --check src/index.js",
     "test": "echo \"No backend tests configured yet\""
   },
