@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import type { ScreenerResultRow } from '../../api/screenerApi'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { formatPercent } from '../../utils/formatPercent'
@@ -13,6 +14,8 @@ interface ResultsTableProps {
 const allColumns = ['company', 'ticker', 'sector', 'marketCap', 'peRatio', 'roce', 'revenueGrowth', 'promoterHolding']
 
 function ResultsTable({ rows, columns, onExport, onColumnsChange }: ResultsTableProps) {
+  const navigate = useNavigate()
+
   const toggleColumn = (column: string) => {
     if (columns.includes(column)) {
       onColumnsChange(columns.filter((entry) => entry !== column))
@@ -51,7 +54,7 @@ function ResultsTable({ rows, columns, onExport, onColumnsChange }: ResultsTable
           <thead>
             <tr>
               {columns.map((column) => (
-                <th key={column} className="capitalize">
+                <th key={column} className="capitalize py-3 px-4 text-left border-b border-slate-100">
                   {column}
                 </th>
               ))}
@@ -59,7 +62,11 @@ function ResultsTable({ rows, columns, onExport, onColumnsChange }: ResultsTable
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.ticker} className="cursor-pointer hover:shadow-sm" onClick={() => window.location.href = `/company/${row.ticker}`}>
+              <tr 
+                key={row.ticker} 
+                className="cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-50" 
+                onClick={() => navigate(`/company/${row.ticker}`)}
+              >
                 {columns.map((column) => (
                   <td key={`${row.ticker}-${column}`}>
                     {column === 'company' && <span className="font-semibold text-blue-600 hover:underline">{row.company}</span>}

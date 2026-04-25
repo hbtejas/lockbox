@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import DashboardWidgets from '../components/dashboard/DashboardWidgets'
 import MarketEvents from '../components/dashboard/MarketEvents'
 import MarketInsightWidget from '../components/ai/MarketInsightWidget'
+import { LiveTickerBar } from '../components/dashboard/LiveTickerBar'
 import { fetchAllIdeas } from '../api/ideasApi'
 import { fetchMarketIndices, fetchResultsSummary } from '../api/stockApi'
 import { useAuthStore } from '../store/authStore'
@@ -26,6 +27,7 @@ function DashboardPage() {
 
   return (
     <div className="space-y-4">
+      <LiveTickerBar />
       <section className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <div className="card-shell p-5">
           <p className="text-xs uppercase tracking-wide text-brand-500">Indian Stock Market Research Platform</p>
