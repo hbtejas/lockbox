@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #f8fafc;
+    --bg-elev: #ffffff;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --ring: #3b82f6;
+    --positive: #059669;
+    --negative: #e11d48;
+  }
+
+  .dark {
+    --bg: #020617;
+    --bg-elev: #0f172a;
+    --card: #0f172a;
+    --border: #1e293b;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --ring: #3b82f6;
+    --positive: #10b981;
+    --negative: #f43f5e;
+  }
+
+  * {
+    @apply border-[var(--border)];
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    background: var(--bg);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+@layer components {
+  .card-shell {
+    @apply rounded-xl border bg-[var(--card)] shadow-sm transition-all duration-200;
+  }
+  
+  .card-shell table {
+    @apply w-full text-left text-[11px] font-medium border-collapse;
+  }
+  
+  .card-shell th {
+    @apply sticky top-0 z-20 border-b border-[var(--border)] bg-gray-50/80 px-3 py-2.5 font-bold uppercase tracking-wider text-slate-400 dark:bg-slate-800/80 backdrop-blur-sm;
+  }
+  
+  .card-shell td {
+    @apply border-b border-slate-100 px-3 py-2.5 dark:border-slate-800;
+  }
+
+  .card-shell tbody tr {
+    @apply transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50;
+  }
+}
+
+.live-pulse {
+  @apply relative flex h-2 w-2;
+}
+.live-pulse-dot {
+  @apply absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75;
+}
+.live-pulse-center {
+  @apply relative inline-flex h-2 w-2 rounded-full bg-emerald-500;
+}
+
+.heatmap-g-1 { background-color: #c3e3cc; color: #1e1e1e; }
+.heatmap-g-2 { background-color: #8acb9e; color: #1e1e1e; }
+.heatmap-g-3 { background-color: #43a15d; color: #ffffff; }
+.heatmap-g-4 { background-color: #1e8f3f; color: #ffffff; }
+
+.heatmap-r-1 { background-color: #fad5d5; color: #1e1e1e; }
+.heatmap-r-2 { background-color: #f4a1a1; color: #1e1e1e; }
+.heatmap-r-3 { background-color: #ea6262; color: #ffffff; }
+.heatmap-r-4 { background-color: #e23738; color: #ffffff; }
+
+.number-font {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
