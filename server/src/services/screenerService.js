@@ -13,26 +13,41 @@ const metricMap = {
   roe: 'roe',
   'p/e ratio': 'peRatio',
   pe: 'peRatio',
+  'pe ratio': 'peRatio',
   pe_ratio: 'peRatio',
   'p/b ratio': 'pbRatio',
+  'pb ratio': 'pbRatio',
   pb_ratio: 'pbRatio',
   'debt/equity': 'debtToEquity',
+  'debt to equity': 'debtToEquity',
   debt_to_equity: 'debtToEquity',
   eps: 'eps',
   'dividend yield': 'dividendYield',
   dividend_yield: 'dividendYield',
   'promoter holding': 'promoterHolding',
   promoter_holding: 'promoterHolding',
+  'promoter holding change': 'promoterHoldingChange',
   'fii holding': 'fiiHolding',
   fii_holding: 'fiiHolding',
+  'fii holding change': 'fiiHoldingChange',
   'dii holding': 'diiHolding',
+  'dii holding change': 'diiHoldingChange',
   'qoq revenue growth': 'qoqRevenueGrowth',
   'yoy revenue growth': 'revenueGrowth',
+  'sales growth 5yr': 'salesGrowth5Yr',
+  'operating margin': 'netMargin', // approximate
   'cash from operations': 'cashFromOperations',
+  'cash flow operations': 'cashFromOperations',
   'capex/net block': 'capexNetBlock',
+  capex: 'capex',
   'free cash flow': 'freeCashFlow',
   free_cash_flow: 'freeCashFlow',
   net_margin: 'netMargin',
+  rsi: 'rsi',
+  'sma 50': 'sma50',
+  'sma 200': 'sma200',
+  volume: 'volume',
+  sector: 'sector',
 }
 
 function buildScreenerRows() {
@@ -74,13 +89,22 @@ function buildScreenerRows() {
       eps: latestFin.eps || 12,
       dividendYield: company.dividendYield || 0.5,
       promoterHolding: latestSh.promoterHolding || 50,
+      promoterHoldingChange: (latestSh.promoterHolding || 50) - (shareholding[1]?.promoterHolding || latestSh.promoterHolding || 50),
       fiiHolding: latestSh.fiiHolding || 20,
+      fiiHoldingChange: (latestSh.fiiHolding || 20) - (shareholding[1]?.fiiHolding || latestSh.fiiHolding || 20),
       diiHolding: latestSh.diiHolding || 10,
+      diiHoldingChange: (latestSh.diiHolding || 10) - (shareholding[1]?.diiHolding || latestSh.diiHolding || 10),
       qoqRevenueGrowth: revGrowth,
       yoyRevenueGrowth: revGrowth, // Simplification
+      salesGrowth5Yr: 15 + Math.random() * 10,
       cashFromOperations: latestFin.operatingCashFlow || 10000,
+      capex: latestFin.capex || 5000,
       capexNetBlock: 0.15,
       freeCashFlow: latestFin.freeCashFlow || 5000,
+      rsi: 30 + Math.random() * 40,
+      sma50: company.currentPrice * 0.95,
+      sma200: company.currentPrice * 0.85,
+      volume: 1000000 + Math.random() * 5000000,
     }
   })
 }
@@ -98,19 +122,23 @@ function parseClauses(query) {
     const clause = split[index]
     const connector = split[index + 1]?.toUpperCase() ?? null
 
-    const match = clause.match(/(.+?)\s*(>=|<=|>|<|=)\s*([\d.]+)/)
+    const match = clause.match(/(.+?)\s*(>=|<=|>|<|=)\s*(['"].+?['"]|[\w\d.]+)/)
     if (!match) {
       continue
     }
 
     const rawMetric = match[1].trim()
     const operator = match[2]
-    const value = Number(match[3])
+    const rawValue = match[3].trim()
     const metric = metricMap[rawMetric]
 
-    if (!metric || Number.isNaN(value)) {
+    if (!metric) {
       continue
     }
+
+    // Handle quoted or unquoted string values
+    const stringMatch = rawValue.match(/^['"](.+)['"]$/)
+    const value = stringMatch ? stringMatch[1] : (isNaN(Number(rawValue)) ? rawValue : Number(rawValue))
 
     clauses.push({ metric, operator, value, connector })
   }
@@ -120,6 +148,14 @@ function parseClauses(query) {
 
 function evaluateClause(row, clause) {
   const actual = row[clause.metric]
+  
+  if (typeof clause.value === 'string') {
+    const term = clause.value.toLowerCase()
+    const actualStr = String(actual ?? '').toLowerCase()
+    if (clause.operator === '=') return actualStr === term
+    return false
+  }
+
   if (typeof actual !== 'number') {
     return false
   }

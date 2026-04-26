@@ -1,10 +1,12 @@
-import { Menu, Moon, Search, Sun } from 'lucide-react'
+import { Menu, Moon, Search, Sun, X } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { logout } from '../../api/authApi'
 import { useAuthStore } from '../../store/authStore'
 import { useUIStore } from '../../store/uiStore'
 import Button from '../ui/Button'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { searchStocks } from '../../api/stockApi'
+import type { WatchlistItem } from '../../types/domain'
 
 const navGroups = [
   { label: 'Tracking Tools', path: '/portfolio' },
@@ -18,7 +20,40 @@ function Navbar() {
   const user = useAuthStore((state) => state.user)
   const clearSession = useAuthStore((state) => state.clearSession)
   const [search, setSearch] = useState('')
+  const [suggestions, setSuggestions] = useState<WatchlistItem[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const navigate = useNavigate()
+  const searchRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (search.trim().length > 1) {
+        try {
+          const results = await searchStocks(search)
+          setSuggestions(results.slice(0, 8))
+          setShowSuggestions(true)
+        } catch {
+          setSuggestions([])
+        }
+      } else {
+        setSuggestions([])
+        setShowSuggestions(false)
+      }
+    }
+
+    const timer = setTimeout(fetchSuggestions, 300)
+    return () => clearTimeout(timer)
+  }, [search])
 
   const onLogout = async () => {
     try {
@@ -31,8 +66,17 @@ function Navbar() {
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && search.trim()) {
-      navigate(`/company/${search.toUpperCase()}`)
+      const match = suggestions.find(s => s.symbol.toUpperCase() === search.toUpperCase())
+      const target = match ? match.symbol : search.toUpperCase()
+      navigate(`/company/${target}`)
+      setShowSuggestions(false)
     }
+  }
+
+  const selectSuggestion = (symbol: string) => {
+    navigate(`/company/${symbol}`)
+    setSearch('')
+    setShowSuggestions(false)
   }
 
   return (
@@ -71,15 +115,24 @@ function Navbar() {
           ))}
         </nav>
 
-        <div className="relative ml-auto hidden w-[320px] md:block mx-8 text-slate-800">
+        <div ref={searchRef} className="relative ml-auto hidden w-[320px] md:block mx-8 text-slate-800">
           <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
           <input
             placeholder="Search for a company, sector or brand"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleSearch}
-            className="w-full rounded-full border border-slate-300 bg-slate-100 py-2 pl-9 pr-4 text-xs font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+            onFocus={() => search.trim().length > 1 && setShowSuggestions(true)}
+            className="w-full rounded-full border border-slate-300 bg-slate-100 py-2 pl-9 pr-10 text-xs font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
           />
+          {search && (
+            <button 
+              onClick={() => { setSearch(''); setSuggestions([]); setShowSuggestions(false); }}
+              className="absolute right-10 top-2.5 p-0.5 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
           <div className="absolute right-4 top-3.5 flex items-center gap-2">
             <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">Live</span>
             <div className="live-pulse">
@@ -87,6 +140,28 @@ function Navbar() {
               <span className="live-pulse-center"></span>
             </div>
           </div>
+
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-[var(--border)] bg-[var(--bg-elev)] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="py-2">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.symbol}
+                    onClick={() => selectSuggestion(s.symbol)}
+                    className="w-full px-4 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between group transition-colors"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{s.symbol}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">{s.name}</span>
+                    </div>
+                    <span className={`text-[10px] font-bold ${s.changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {s.changePercent >= 0 ? '+' : ''}{s.changePercent.toFixed(2)}%
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">

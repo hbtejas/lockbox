@@ -256,6 +256,22 @@ function getResultsFeed() {
     .sort((a, b) => new Date(a.resultDate).getTime() - new Date(b.resultDate).getTime())
 }
 
+function syncNewCompany(company) {
+  if (quoteState.has(company.symbol)) return
+
+  quoteState.set(company.symbol, {
+    symbol: company.symbol,
+    price: company.currentPrice,
+    prevClose: company.currentPrice / (1 + (company.changePercent || 0) / 100),
+    open: company.currentPrice,
+    high: company.currentPrice,
+    low: company.currentPrice,
+    volume: 1_000_000,
+    changePercent: round(company.changePercent || 0),
+    at: new Date().toISOString(),
+  })
+}
+
 module.exports = {
   getAllLiveQuotes,
   getLiveQuote,
@@ -265,4 +281,5 @@ module.exports = {
   tickLiveQuotes,
   getTimelineFeed,
   getResultsFeed,
+  syncNewCompany,
 }

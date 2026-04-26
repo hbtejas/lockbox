@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase'
 import type { UserProfile } from '../types/domain'
+import { http } from './http'
 
 export interface AuthPayload {
   name?: string
@@ -13,66 +13,61 @@ export interface AuthResponse {
 }
 
 export async function signup(payload: AuthPayload): Promise<AuthResponse> {
-  const { data, error } = await supabase.auth.signUp({
+  const { data } = await http.post('/auth/signup', {
+    name: payload.name,
     email: payload.email,
     password: payload.password,
-    options: {
-      data: {
-        name: payload.name,
-      },
-    },
   })
 
-  if (error) throw error
-  if (!data.user || !data.session) throw new Error('Signup failed')
-
+  const result = data.data
   return {
-    accessToken: data.session.access_token,
+    accessToken: result.accessToken,
     user: {
-      id: data.user.id,
-      email: data.user.email || '',
-      name: data.user.user_metadata?.name || payload.name || 'User',
-      plan: 'free',
-      createdAt: data.user.created_at,
+      id: result.user.id,
+      email: result.user.email,
+      name: result.user.name || payload.name || 'User',
+      plan: result.user.plan || 'free',
+      createdAt: result.user.createdAt || result.user.created_at,
     },
   }
 }
 
 export async function login(payload: AuthPayload): Promise<AuthResponse> {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data } = await http.post('/auth/login', {
     email: payload.email,
     password: payload.password,
   })
 
-  if (error) throw error
-  if (!data.user || !data.session) throw new Error('Login failed')
-
+  const result = data.data
   return {
-    accessToken: data.session.access_token,
+    accessToken: result.accessToken,
     user: {
-      id: data.user.id,
-      email: data.user.email || '',
-      name: data.user.user_metadata?.name || 'User',
-      plan: 'free',
-      createdAt: data.user.created_at,
+      id: result.user.id,
+      email: result.user.email,
+      name: result.user.name || 'User',
+      plan: result.user.plan || 'free',
+      createdAt: result.user.createdAt || result.user.created_at,
     },
   }
 }
 
 export async function logout() {
-  const { error } = await supabase.auth.signOut()
-  if (error) throw error
+  await http.post('/auth/logout')
 }
 
 export async function me(): Promise<UserProfile | null> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  try {
+    const { data } = await http.get('/auth/me')
+    if (!data.data) return null
 
-  return {
-    id: user.id,
-    email: user.email || '',
-    name: user.user_metadata?.name || 'User',
-    plan: 'free',
-    createdAt: user.created_at,
+    return {
+      id: data.data.id,
+      email: data.data.email,
+      name: data.data.name || 'User',
+      plan: data.data.plan || 'free',
+      createdAt: data.data.createdAt || data.data.created_at,
+    }
+  } catch {
+    return null
   }
 }

@@ -23,7 +23,7 @@ function CompanyPage() {
   const [period, setPeriod] = useState('1Y')
   const [tab, setTab] = useState('Overview')
 
-  const { data: overview } = useCompanyOverview(symbol)
+  const { data: overview, isLoading, isError } = useCompanyOverview(symbol)
   const { data: prices } = useStockPrices(symbol, period.toLowerCase())
   const { data: quarterly } = useFinancials(symbol, 'quarterly')
   const { data: annual } = useFinancials(symbol, 'annual')
@@ -32,11 +32,21 @@ function CompanyPage() {
   const { data: news } = useNews(symbol)
   const { data: companyResults } = useCompanyResults(symbol)
 
-  if (!overview) {
+  if (isLoading) {
     return (
-      <section className="card-shell p-4">
-        <h1 className="text-xl font-bold">Company not found</h1>
-        <p className="mt-2 text-sm text-[var(--text-muted)]">No live company data is available for this symbol.</p>
+      <section className="card-shell p-8 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+        <span className="ml-3 text-sm text-[var(--text-muted)]">Loading {symbol}...</span>
+      </section>
+    )
+  }
+
+  if (!overview || isError) {
+    return (
+      <section className="card-shell p-6">
+        <h1 className="text-xl font-bold text-red-500">Company not found</h1>
+        <p className="mt-2 text-sm text-[var(--text-muted)]">No data available for symbol <strong>{symbol}</strong>. Please check the spelling.</p>
+        <p className="mt-3 text-xs text-[var(--text-muted)]">Try: RELIANCE, TCS, HDFCBANK, INFY, ICICIBANK, ITC, SBIN, BHARTIARTL, LT, TATAMOTORS, HAL, TITAN, BAJFINANCE, WIPRO, MARUTI, SUNPHARMA, HCLTECH, TATASTEEL, ADANIENT, AXISBANK, NESTLEIND, ASIANPAINT, KOTAKBANK, HINDUNILVR, POWERGRID</p>
       </section>
     )
   }

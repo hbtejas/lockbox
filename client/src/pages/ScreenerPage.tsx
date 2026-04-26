@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import FilterBuilder from '../components/screener/FilterBuilder'
 import NaturalLanguageSearch from '../components/screener/NaturalLanguageSearch'
 import ResultsTable from '../components/screener/ResultsTable'
@@ -38,8 +38,8 @@ function ScreenerPage() {
   const [rows, setRows] = useState<ScreenerResultRow[]>([])
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState('Popular Screens')
-  const [hasRunQuery, setHasRunQuery] = useState(false)
+  const [activeTab, setActiveTab] = useState('Stock Screener')
+  const [hasRunQuery, setHasRunQuery] = useState(true)
 
   const filterMutation = useScreenerFilter()
 
@@ -53,7 +53,7 @@ function ScreenerPage() {
         query: nextQuery,
         columns,
         page: 1,
-        limit: 20,
+        limit: 100,
       })
       setRows(response.data)
     } catch (requestError) {
@@ -61,6 +61,10 @@ function ScreenerPage() {
       setError(requestError instanceof Error ? requestError.message : 'Unable to run screener query')
     }
   }
+
+  useEffect(() => {
+    void runQuery('')
+  }, [])
 
   const exportCsv = () => {
     const header = columns.join(',')
@@ -83,7 +87,11 @@ function ScreenerPage() {
             key={tab}
             onClick={() => {
               setActiveTab(tab)
-              if (tab === 'Popular Screens') setHasRunQuery(false)
+              if (tab === 'Popular Screens') {
+                setHasRunQuery(false)
+              } else if (!hasRunQuery) {
+                void runQuery('')
+              }
             }}
             className={`px-4 py-2 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
               activeTab === tab

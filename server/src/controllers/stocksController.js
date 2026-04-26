@@ -7,14 +7,50 @@ const querySchema = z.object({
   q: z.string().min(1),
 })
 
+const YahooFinance = require('yahoo-finance2').default
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
+
 async function searchStocks(req, res) {
   const parsed = querySchema.safeParse(req.query)
   if (!parsed.success) {
     return errorResponse(res, 'Search query is required', 400, 'VALIDATION_ERROR')
   }
 
-  const data = StockModel.searchCompanies(parsed.data.q)
-  return successResponse(res, data)
+  const query = parsed.data.q
+  let data = StockModel.searchCompanies(query)
+
+  // If no local matches, or we want to expand results, search Yahoo!
+  if (data.length < 3) {
+    try {
+      const searchResults = await yahooFinance.search(query, {
+        quotesCount: 5,
+        newsCount: 0,
+      })
+      
+      const yahooQuotes = searchResults.quotes
+        .filter(q => q.isYahooFinance && (q.symbol.endsWith('.NS') || q.symbol.endsWith('.BO')))
+        .map(q => ({
+          symbol: q.symbol.replace('.NS', '').replace('.BO', ''),
+          name: q.longname || q.shortname || q.symbol,
+          exchange: q.exchange,
+          sector: 'Diversified',
+          industry: 'Diversified',
+          marketCapCategory: 'Unknown',
+        }))
+      
+      // Merge and deduplicate
+      const existingSymbols = new Set(data.map(d => d.symbol))
+      yahooQuotes.forEach(y => {
+        if (!existingSymbols.has(y.symbol)) {
+          data.push(y)
+        }
+      })
+    } catch (err) {
+      console.warn('Yahoo search failed', err)
+    }
+  }
+
+  return successResponse(res, data.slice(0, 10))
 }
 
 async function getOverview(req, res) {

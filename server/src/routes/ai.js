@@ -20,7 +20,8 @@ const aiRateLimit = rateLimit({
   limit: env.aiRateLimitPerHour,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  validate: { xForwardedForHeader: false, ip: false },
+  keyGenerator: (req) => req.user?.id || 'anonymous',
   message: {
     success: false,
     code: 'AI_RATE_LIMIT',
@@ -33,7 +34,8 @@ const freeAiLimit = rateLimit({
   limit: env.aiFreeDailyLimit,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `free:${req.user?.id ?? req.ip}`,
+  validate: { xForwardedForHeader: false, ip: false },
+  keyGenerator: (req) => `free:${req.user?.id ?? 'anonymous'}`,
   skip: (req) => req.user?.plan === 'premium',
   message: {
     success: false,
