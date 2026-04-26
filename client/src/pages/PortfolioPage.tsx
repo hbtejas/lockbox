@@ -43,37 +43,45 @@ function PortfolioPage() {
 
   const chartData = performanceData ?? []
 
+  const totalValue = useMemo(
+    () => (activePortfolio?.holdings ?? []).reduce((sum, h) => sum + h.currentPrice * h.quantity, 0),
+    [activePortfolio?.holdings]
+  )
+
   const sectorAllocation = useMemo(
     () =>
-      (activePortfolio?.holdings ?? []).map((holding) => ({
-        name: holding.symbol,
-        value: Number((holding.currentPrice * holding.quantity).toFixed(2)),
-      })),
-    [activePortfolio?.holdings],
+      (activePortfolio?.holdings ?? []).map((holding) => {
+        const val = holding.currentPrice * holding.quantity
+        return {
+          name: holding.symbol,
+          value: totalValue > 0 ? Number(((val / totalValue) * 100).toFixed(1)) : 0,
+          absolute: val
+        }
+      }),
+    [activePortfolio?.holdings, totalValue],
   )
 
   const marketCapAllocation = useMemo(
     () => {
-      if (!activePortfolio) {
+      if (!activePortfolio || totalValue === 0) {
         return []
       }
 
       const values = activePortfolio.holdings.map((holding) => holding.currentPrice * holding.quantity)
-      const total = values.reduce((sum, value) => sum + value, 0)
-
-      const large = values.filter((value) => (total > 0 ? value / total >= 0.25 : false)).reduce((sum, value) => sum + value, 0)
+      
+      const large = values.filter((value) => value / totalValue >= 0.25).reduce((sum, value) => sum + value, 0)
       const mid = values
-        .filter((value) => (total > 0 ? value / total >= 0.1 && value / total < 0.25 : false))
+        .filter((value) => value / totalValue >= 0.1 && value / totalValue < 0.25)
         .reduce((sum, value) => sum + value, 0)
-      const small = Math.max(total - large - mid, 0)
+      const small = Math.max(totalValue - large - mid, 0)
 
       return [
-        { name: 'Large Position', value: Number(large.toFixed(2)) },
-        { name: 'Mid Position', value: Number(mid.toFixed(2)) },
-        { name: 'Small Position', value: Number(small.toFixed(2)) },
+        { name: 'Large Position', value: Number(((large / totalValue) * 100).toFixed(1)) },
+        { name: 'Mid Position', value: Number(((mid / totalValue) * 100).toFixed(1)) },
+        { name: 'Small Position', value: Number(((small / totalValue) * 100).toFixed(1)) },
       ].filter((bucket) => bucket.value > 0)
     },
-    [activePortfolio],
+    [activePortfolio, totalValue],
   )
 
   const onCreate = async () => {

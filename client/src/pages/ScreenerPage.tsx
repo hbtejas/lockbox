@@ -36,29 +36,71 @@ const popularScreens = {
 function ScreenerPage() {
   const [columns, setColumns] = useState<string[]>(defaultColumns)
   const [rows, setRows] = useState<ScreenerResultRow[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('Stock Screener')
   const [hasRunQuery, setHasRunQuery] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   const filterMutation = useScreenerFilter()
 
-  const runQuery = async (nextQuery: string) => {
+  const runQuery = async (nextQuery: string, nextPage: number = 1, append: boolean = false) => {
     setQuery(nextQuery)
     setError('')
     setHasRunQuery(true)
+    setLoading(true)
+    setPage(nextPage)
 
     try {
       const response = await filterMutation.mutateAsync({
         query: nextQuery,
         columns,
-        page: 1,
+        page: nextPage,
         limit: 100,
       })
-      setRows(response.data)
+      
+      setRows(prev => append ? [...prev, ...response.data] : response.data)
+      setTotal(response.total)
     } catch (requestError) {
-      setRows([])
+      if (!append) setRows([])
       setError(requestError instanceof Error ? requestError.message : 'Unable to run screener query')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchAllPages = async (nextQuery: string) => {
+    setQuery(nextQuery)
+    setError('')
+    setHasRunQuery(true)
+    setLoading(true)
+    
+    let allRows: ScreenerResultRow[] = []
+    let currentPage = 1
+    let totalRecords = 0
+    
+    try {
+      do {
+        const response = await filterMutation.mutateAsync({
+          query: nextQuery,
+          columns,
+          page: currentPage,
+          limit: 100,
+        })
+        allRows = [...allRows, ...response.data]
+        totalRecords = response.total
+        currentPage++
+      } while (allRows.length < totalRecords && currentPage < 10)
+      
+      setRows(allRows)
+      setTotal(totalRecords)
+      setPage(currentPage - 1)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Error fetching all pages')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -161,17 +203,49 @@ function ScreenerPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-[var(--text-muted)]">Active Query</p>
-                <p className="mt-1 text-sm font-medium">{query}</p>
+                <p className="mt-1 text-sm font-medium">{query || 'All Companies'}</p>
+                <p className="mt-2 text-[10px] text-slate-400 uppercase tracking-wider font-bold">
+                  Showing {rows.length} of {total} results
+                </p>
               </div>
-              <button
-                onClick={() => setHasRunQuery(false)}
-                className="text-xs font-semibold text-blue-600 hover:underline"
-              >
-                Clear Query
-              </button>
+              <div className="flex gap-4">
+                {rows.length < total && !loading && (
+                  <button
+                    onClick={() => void fetchAllPages(query)}
+                    className="text-xs font-semibold text-brand-600 hover:underline"
+                  >
+                    Fetch All
+                  </button>
+                )}
+                <button
+                  onClick={() => setHasRunQuery(false)}
+                  className="text-xs font-semibold text-blue-600 hover:underline"
+                >
+                  Clear Query
+                </button>
+              </div>
             </div>
           </section>
-          <ResultsTable rows={rows} columns={columns} onColumnsChange={setColumns} onExport={exportCsv} />
+
+          {loading && rows.length === 0 ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin h-8 w-8 border-4 border-brand-500 border-t-transparent rounded-full" />
+            </div>
+          ) : (
+            <ResultsTable rows={rows} columns={columns} onColumnsChange={setColumns} onExport={exportCsv} />
+          )}
+
+          {rows.length < total && (
+            <div className="flex justify-center py-4">
+              <button
+                disabled={loading}
+                onClick={() => void runQuery(query, page + 1, true)}
+                className="rounded-full bg-slate-900 px-6 py-2 text-xs font-bold text-white transition-all hover:bg-slate-800 disabled:opacity-50"
+              >
+                {loading ? 'Loading...' : `Load More (${total - rows.length} remaining)`}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

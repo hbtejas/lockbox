@@ -5,7 +5,7 @@ const { getPagination, buildPaginatedResponse } = require('../utils/pagination')
 const { errorResponse, successResponse } = require('../utils/response')
 
 const filterSchema = z.object({
-  query: z.string().min(1),
+  query: z.string().min(0).default(''),
   columns: z.array(z.string()).default([]),
   page: z.number().optional(),
   limit: z.number().optional(),
