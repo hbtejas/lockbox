@@ -1,4 +1,6 @@
+import React, { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { FixedSizeList as List } from 'react-window'
 import type { ScreenerResultRow } from '../../api/screenerApi'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { formatPercent } from '../../utils/formatPercent'
@@ -12,6 +14,30 @@ interface ResultsTableProps {
 }
 
 const allColumns = ['company', 'ticker', 'sector', 'marketCap', 'peRatio', 'roce', 'revenueGrowth', 'promoterHolding']
+
+const TableRow = memo(({ data, index, style, columns, navigate }: any) => {
+  const row = data[index]
+  return (
+    <div
+      style={style}
+      className="flex items-center border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer text-sm"
+      onClick={() => navigate(`/company/${row.ticker}`)}
+    >
+      {columns.map((column: string) => (
+        <div key={`${row.ticker}-${column}`} className="flex-1 px-4 overflow-hidden text-ellipsis whitespace-nowrap">
+          {column === 'company' && <span className="font-semibold text-blue-600 hover:underline">{row.company}</span>}
+          {column === 'ticker' && <span className="text-[var(--text-muted)] font-mono text-xs">{row.ticker}</span>}
+          {column === 'sector' && row.sector}
+          {column === 'marketCap' && formatCurrency(row.marketCap)}
+          {column === 'peRatio' && row.peRatio.toFixed(2)}
+          {column === 'roce' && formatPercent(row.roce, false)}
+          {column === 'revenueGrowth' && formatPercent(row.revenueGrowth, true)}
+          {column === 'promoterHolding' && formatPercent(row.promoterHolding, false)}
+        </div>
+      ))}
+    </div>
+  )
+})
 
 function ResultsTable({ rows, columns, onExport, onColumnsChange }: ResultsTableProps) {
   const navigate = useNavigate()
@@ -49,40 +75,23 @@ function ResultsTable({ rows, columns, onExport, onColumnsChange }: ResultsTable
         </div>
       </div>
 
-      <div className="mt-3 overflow-auto">
-        <table>
-          <thead>
-            <tr>
-              {columns.map((column) => (
-                <th key={column} className="capitalize py-3 px-4 text-left border-b border-slate-100">
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr 
-                key={row.ticker} 
-                className="cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-50" 
-                onClick={() => navigate(`/company/${row.ticker}`)}
-              >
-                {columns.map((column) => (
-                  <td key={`${row.ticker}-${column}`}>
-                    {column === 'company' && <span className="font-semibold text-blue-600 hover:underline">{row.company}</span>}
-                    {column === 'ticker' && <span className="text-[var(--text-muted)] font-mono text-xs">{row.ticker}</span>}
-                    {column === 'sector' && row.sector}
-                    {column === 'marketCap' && formatCurrency(row.marketCap)}
-                    {column === 'peRatio' && row.peRatio.toFixed(2)}
-                    {column === 'roce' && formatPercent(row.roce, false)}
-                    {column === 'revenueGrowth' && formatPercent(row.revenueGrowth, true)}
-                    {column === 'promoterHolding' && formatPercent(row.promoterHolding, false)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mt-3">
+        <div className="flex bg-slate-50/50 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">
+          {columns.map((column) => (
+            <div key={column} className="flex-1 px-4">
+              {column}
+            </div>
+          ))}
+        </div>
+        <List
+          height={500}
+          itemCount={rows.length}
+          itemSize={48}
+          width="100%"
+          itemData={rows}
+        >
+          {(props) => <TableRow {...props} columns={columns} navigate={navigate} />}
+        </List>
       </div>
     </section>
   )

@@ -120,6 +120,7 @@ async function getCompanyOverview(symbol) {
     })
 
     company = newCompany
+    StockModel.rebuildIndexes()
   }
 
   if (!company) {

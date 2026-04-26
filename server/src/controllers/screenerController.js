@@ -11,6 +11,9 @@ const filterSchema = z.object({
   limit: z.number().optional(),
 })
 
+const queryCache = new Map()
+const CACHE_TTL = 300000 // 5 minutes
+
 function filterScreener(req, res) {
   const parsed = filterSchema.safeParse(req.body)
   if (!parsed.success) {
@@ -18,7 +21,19 @@ function filterScreener(req, res) {
   }
 
   const { page, limit } = getPagination(req.body)
-  const allRows = runScreenerQuery(parsed.data.query)
+  const { query } = parsed.data
+  const cacheKey = JSON.stringify({ query })
+  
+  let allRows
+  const cached = queryCache.get(cacheKey)
+  
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    allRows = cached.data
+  } else {
+    allRows = runScreenerQuery(query)
+    queryCache.set(cacheKey, { data: allRows, timestamp: Date.now() })
+  }
+
   const paginatedRows = allRows.slice((page - 1) * limit, page * limit)
 
   return res.status(200).json(buildPaginatedResponse(paginatedRows, allRows.length, page, limit))

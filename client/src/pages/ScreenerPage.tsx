@@ -3,6 +3,7 @@ import FilterBuilder from '../components/screener/FilterBuilder'
 import NaturalLanguageSearch from '../components/screener/NaturalLanguageSearch'
 import ResultsTable from '../components/screener/ResultsTable'
 import { useScreenerFilter } from '../hooks/useScreener'
+import ScreenerSkeleton from '../components/screener/ScreenerSkeleton'
 import type { ScreenerResultRow } from '../api/screenerApi'
 import type { ParsedScreenerQuery } from '../types/ai'
 
@@ -228,9 +229,7 @@ function ScreenerPage() {
           </section>
 
           {loading && rows.length === 0 ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin h-8 w-8 border-4 border-brand-500 border-t-transparent rounded-full" />
-            </div>
+            <ScreenerSkeleton />
           ) : (
             <ResultsTable rows={rows} columns={columns} onColumnsChange={setColumns} onExport={exportCsv} />
           )}

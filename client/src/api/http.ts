@@ -51,11 +51,17 @@ http.interceptors.request.use((config) => {
     config.headers = headers
   }
 
+  ;(config as any).metadata = { startTime: Date.now() }
   return config
 })
 
 http.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const startTime = (response.config as any).metadata.startTime
+    const duration = Date.now() - startTime
+    console.log(`[Performance] ${response.config.method?.toUpperCase()} ${response.config.url} took ${duration}ms`)
+    return response
+  },
   async (error) => {
     const originalRequest = error.config as RetryableRequestConfig | undefined
     const status = error?.response?.status
