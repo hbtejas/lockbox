@@ -3,14 +3,17 @@ import { formatCurrency } from '../../utils/formatCurrency'
 import { formatPercent } from '../../utils/formatPercent'
 import Badge from '../ui/Badge'
 import { useLivePrice } from '../../hooks/useLivePrice'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Button from '../ui/Button'
+import { useWatchlists, useAddWatchlistStock, useRemoveWatchlistStock } from '../../hooks/useWatchlist'
+import { useAuthStore } from '../../store/authStore'
 
 interface CompanyHeaderProps {
   overview: CompanyOverview
 }
 
 function CompanyHeader({ overview }: CompanyHeaderProps) {
+  const user = useAuthStore(s => s.user)
   const liveQuote = useLivePrice(overview.symbol)
   const [isUpdating, setIsUpdating] = useState(false)
 
@@ -24,6 +27,30 @@ function CompanyHeader({ overview }: CompanyHeaderProps) {
       return () => clearTimeout(timer)
     }
   }, [liveQuote])
+
+  const watchlists = useWatchlists(!!user)
+  const addStock = useAddWatchlistStock()
+  const removeStock = useRemoveWatchlistStock()
+
+  const watchlistSymbols = useMemo(() => {
+    const symbols = new Set<string>()
+    watchlists.data?.forEach(w => w.symbols?.forEach(s => symbols.add(s)))
+    return symbols
+  }, [watchlists.data])
+
+  const isWatched = watchlistSymbols.has(overview.symbol)
+
+  const onToggleWatchlist = () => {
+    if (!user) return
+    const watchlistId = watchlists.data?.[0]?.id
+    if (!watchlistId) return
+
+    if (isWatched) {
+      removeStock.mutate({ watchlistId, symbol: overview.symbol })
+    } else {
+      addStock.mutate({ watchlistId, symbol: overview.symbol })
+    }
+  }
 
   return (
     <section className="card-shell p-5">
@@ -58,8 +85,14 @@ function CompanyHeader({ overview }: CompanyHeaderProps) {
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2 lg:pt-0">
-          <Button className="shadow-sm">Add to Watchlist</Button>
-          <Button variant="secondary" className="shadow-sm">Analyze Portfolio</Button>
+          <Button 
+            variant={isWatched ? 'secondary' : 'default'}
+            onClick={onToggleWatchlist} 
+            className="shadow-sm min-w-[140px]"
+          >
+            {isWatched ? 'In Watchlist' : 'Add to Watchlist'}
+          </Button>
+          <Button variant="outline" className="shadow-sm border-slate-200">Analyze Portfolio</Button>
           <Button variant="ghost" className="text-slate-500 hover:text-slate-700">Set Alert</Button>
         </div>
       </div>
