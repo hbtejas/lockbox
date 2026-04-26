@@ -7,7 +7,7 @@ import ScreenerSkeleton from '../components/screener/ScreenerSkeleton'
 import type { ScreenerResultRow } from '../api/screenerApi'
 import type { ParsedScreenerQuery } from '../types/ai'
 
-const defaultColumns = ['company', 'ticker', 'sector', 'marketCap', 'peRatio', 'roce', 'revenueGrowth']
+const defaultColumns = ['score', 'company', 'sector', 'marketCap', 'peRatio', 'roce', 'revenueGrowth', 'insights']
 
 const popularScreens = {
   Fundamentals: [
@@ -105,148 +105,121 @@ function ScreenerPage() {
     }
   }
 
-  useEffect(() => {
-    void runQuery('')
-  }, [])
-
   const exportCsv = () => {
-    const header = columns.join(',')
-    const lines = rows.map((row) => columns.map((column) => `${row[column as keyof typeof row] ?? ''}`).join(','))
-    const csv = [header, ...lines].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'screener-results.csv'
-    link.click()
-    URL.revokeObjectURL(url)
+    const headers = columns.join(',')
+    const csvContent = rows
+      .map((row) => columns.map((col) => (row as any)[col]).join(','))
+      .join('\n')
+    const blob = new Blob([`${headers}\n${csvContent}`], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `screener_results_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex border-b border-[var(--border)] overflow-x-auto hidden-scrollbar">
-        {['Popular Screens', 'Stock Screener', 'Advanced Screener', 'Saved Screens', 'Public Screens'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => {
-              setActiveTab(tab)
-              if (tab === 'Popular Screens') {
-                setHasRunQuery(false)
-              } else if (!hasRunQuery) {
-                void runQuery('')
-              }
-            }}
-            className={`px-4 py-2 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-              activeTab === tab
-                ? 'border-yellow-400 text-slate-900 dark:text-white'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {!hasRunQuery ? (
-        <div className="space-y-8 animate-fade-in bg-white dark:bg-slate-900 p-2 md:p-6 rounded-2xl">
-          <h1 className="text-xl font-bold">Popular Stock Screens</h1>
-
-          {Object.entries(popularScreens).map(([category, screens]) => (
-            <section key={category}>
-              <h2 className="mb-4 text-sm font-semibold text-slate-500 uppercase tracking-widest">{category}</h2>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {screens.map((screen) => (
-                  <article
-                    key={screen.title}
-                    className="flex flex-col justify-between rounded-xl border border-[var(--border)] bg-white dark:bg-slate-800 p-4 transition-all hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600"
-                  >
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">{screen.title}</h3>
-                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 line-clamp-3">
-                        {screen.desc}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setActiveTab('Stock Screener')
-                        void runQuery(screen.query)
-                      }}
-                      className="mt-6 self-end text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400"
-                    >
-                      Run Query
-                    </button>
-                  </article>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4 animate-fade-in">
-          {error && <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-500">{error}</p>}
-          
-          <NaturalLanguageSearch
-            onApplyFilters={(parsed: ParsedScreenerQuery) => {
-              const operatorMap: Record<string, string> = { gt: '>', gte: '>=', lt: '<', lte: '<=', eq: '=' }
-              const nlQuery = parsed.filters
-                .map((f) => {
-                  if (f.operator === 'between' && f.value2 != null) {
-                    return `${f.metric} >= ${f.value} AND ${f.metric} <= ${f.value2}`
-                  }
-                  return `${f.metric} ${operatorMap[f.operator] ?? '='} ${f.value}`
-                })
-                .join(` ${parsed.logic || 'AND'} `)
-              void runQuery(nlQuery)
-            }}
-          />
-          <FilterBuilder onApply={runQuery} />
-          <section className="card-shell p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-[var(--text-muted)]">Active Query</p>
-                <p className="mt-1 text-sm font-medium">{query || 'All Companies'}</p>
-                <p className="mt-2 text-[10px] text-slate-400 uppercase tracking-wider font-bold">
-                  Showing {rows.length} of {total} results
-                </p>
-              </div>
-              <div className="flex gap-4">
-                {rows.length < total && !loading && (
-                  <button
-                    onClick={() => void fetchAllPages(query)}
-                    className="text-xs font-semibold text-brand-600 hover:underline"
-                  >
-                    Fetch All
-                  </button>
-                )}
-                <button
-                  onClick={() => setHasRunQuery(false)}
-                  className="text-xs font-semibold text-blue-600 hover:underline"
-                >
-                  Clear Query
-                </button>
-              </div>
-            </div>
-          </section>
-
-          {loading && rows.length === 0 ? (
-            <ScreenerSkeleton />
-          ) : (
-            <ResultsTable rows={rows} columns={columns} onColumnsChange={setColumns} onExport={exportCsv} />
-          )}
-
-          {rows.length < total && (
-            <div className="flex justify-center py-4">
+    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      {/* Professional Sidebar: Saved Strategies */}
+      <aside className="space-y-6">
+        <section className="card-shell p-4 border-slate-200/60 shadow-sm">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Saved Strategies</h3>
+          <div className="space-y-2">
+            {Object.values(popularScreens).flat().slice(0, 8).map((screen) => (
               <button
-                disabled={loading}
-                onClick={() => void runQuery(query, page + 1, true)}
-                className="rounded-full bg-slate-900 px-6 py-2 text-xs font-bold text-white transition-all hover:bg-slate-800 disabled:opacity-50"
+                key={screen.title}
+                onClick={() => void runQuery(screen.query)}
+                className={`w-full text-left p-2.5 rounded-lg text-[11px] font-bold transition-all border ${
+                  query === screen.query 
+                    ? 'bg-brand-50 text-brand-600 border-brand-100 shadow-sm' 
+                    : 'text-slate-600 hover:bg-slate-50 border-transparent'
+                }`}
               >
-                {loading ? 'Loading...' : `Load More (${total - rows.length} remaining)`}
+                {screen.title}
               </button>
-            </div>
-          )}
+            ))}
+          </div>
+        </section>
+
+        <section className="card-shell p-4 bg-gradient-to-br from-slate-900 to-slate-800 text-white border-none shadow-xl">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Power User Tip</h3>
+          <p className="text-[11px] text-slate-300 leading-relaxed">
+            Use the <span className="text-amber-400 font-bold">Natural Language Search</span> to find complex ideas like "Companies with zero debt and ROCE > 25%".
+          </p>
+        </section>
+      </aside>
+
+      <main className="space-y-4">
+        {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-500 font-bold">{error}</p>}
+        
+        <div className="card-shell p-4 flex flex-col md:flex-row gap-4 items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-sm border-slate-200/60">
+          <div className="flex-1 w-full">
+            <NaturalLanguageSearch
+              onApplyFilters={(parsed: ParsedScreenerQuery) => {
+                const operatorMap: Record<string, string> = { gt: '>', gte: '>=', lt: '<', lte: '<=', eq: '=' }
+                const nlQuery = parsed.filters
+                  .map((f) => {
+                    if (f.operator === 'between' && f.value2 != null) {
+                      return `${f.metric} >= ${f.value} AND ${f.metric} <= ${f.value2}`
+                    }
+                    return `${f.metric} ${operatorMap[f.operator] ?? '='} ${f.value}`
+                  })
+                  .join(` ${parsed.logic || 'AND'} `)
+                void runQuery(nlQuery)
+              }}
+            />
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <FilterBuilder onApply={runQuery} />
+            <button
+              onClick={() => { setQuery(''); void runQuery('') }}
+              className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
         </div>
-      )}
+
+        <section className="flex items-center justify-between px-2">
+          <div>
+            <h1 className="text-lg font-bold text-slate-800 tracking-tight">Research Results</h1>
+            <p className="text-[11px] text-slate-500 flex items-center gap-1">
+              Active Strategy: <span className="font-bold text-slate-900 italic opacity-75">{query || 'Unfiltered List'}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">
+              {rows.length} / {total} Matches
+            </p>
+            {rows.length < total && !loading && (
+              <button
+                onClick={() => void fetchAllPages(query)}
+                className="text-[11px] font-black text-brand-600 hover:underline tracking-tight"
+              >
+                FETCH ALL DATA
+              </button>
+            )}
+          </div>
+        </section>
+
+        {loading && rows.length === 0 ? (
+          <ScreenerSkeleton />
+        ) : (
+          <ResultsTable rows={rows} columns={columns} onColumnsChange={setColumns} onExport={exportCsv} />
+        )}
+
+        {rows.length < total && (
+          <div className="flex justify-center py-6">
+            <button
+              disabled={loading}
+              onClick={() => void runQuery(query, page + 1, true)}
+              className="rounded-full bg-slate-900 px-8 py-2.5 text-[11px] font-bold text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+            >
+              {loading ? 'Optimizing Feed...' : `Load Next ${Math.min(100, total - rows.length)} Positions`}
+            </button>
+          </div>
+        )}
+      </main>
     </div>
   )
 }

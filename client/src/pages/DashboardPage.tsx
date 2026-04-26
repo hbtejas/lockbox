@@ -4,6 +4,7 @@ import MarketEvents from '../components/dashboard/MarketEvents'
 import MarketInsightWidget from '../components/ai/MarketInsightWidget'
 import { LiveTickerBar } from '../components/dashboard/LiveTickerBar'
 import { fetchAllIdeas } from '../api/ideasApi'
+import TopPicksGrid from '../components/dashboard/TopPicksGrid'
 import { fetchMarketIndices, fetchResultsSummary } from '../api/stockApi'
 import { useAuthStore } from '../store/authStore'
 
@@ -41,6 +42,8 @@ function DashboardPage() {
           concallsToday={marketEventsQuery.data?.concallsToday ?? 0}
         />
       </section>
+
+      <TopPicksGrid />
 
       <DashboardWidgets
         ideaRows={ideasQuery.data ?? []}

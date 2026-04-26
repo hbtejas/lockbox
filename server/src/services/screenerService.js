@@ -73,14 +73,29 @@ function buildScreenerRows() {
       ? ((latestFin.netProfit - prevFin.netProfit) / prevFin.netProfit) * 100
       : 8
 
+    // Product Engineering: Decision-making metrics
+    const score = Math.round(
+      (roce > 20 ? 3 : roce > 12 ? 1.5 : 0) +
+      (revGrowth > 15 ? 2.5 : revGrowth > 8 ? 1.2 : 0) +
+      (company.peRatio < 25 ? 2 : company.peRatio < 45 ? 1 : 0) +
+      (latestFin.debtToEquity < 0.5 ? 2.5 : latestFin.debtToEquity < 1 ? 1 : 0)
+    )
+
+    const insights = []
+    if (roce > 25 && revGrowth > 20) insights.push('Growth Compounder')
+    if (company.peRatio < 15) insights.push('Value Play')
+    if (latestFin.debtToEquity > 1.5) insights.push('High Leverage')
+    if (revGrowth < 0) insights.push('Declining Revenue')
+    if (latestSh.promoterHolding > 70) insights.push('Skin in the Game')
+
     return {
       company: company.name,
       ticker: company.symbol,
       sector: company.sector,
-      marketCap: company.marketCap / 10000000, // convert to Cr
+      marketCap: company.marketCap / 10000000,
       peRatio: company.peRatio,
       pbRatio: company.pbRatio,
-      roce: latestFin.roce ? latestFin.roce * 100 : 15,
+      roce,
       roe: latestFin.roe ? latestFin.roe * 100 : 15,
       netMargin: latestFin.netMargin ? latestFin.netMargin * 100 : 10,
       revenueGrowth: revGrowth,
@@ -89,21 +104,9 @@ function buildScreenerRows() {
       eps: latestFin.eps || 12,
       dividendYield: company.dividendYield || 0.5,
       promoterHolding: latestSh.promoterHolding || 50,
-      promoterHoldingChange: (latestSh.promoterHolding || 50) - (shareholding[1]?.promoterHolding || latestSh.promoterHolding || 50),
-      fiiHolding: latestSh.fiiHolding || 20,
-      fiiHoldingChange: (latestSh.fiiHolding || 20) - (shareholding[1]?.fiiHolding || latestSh.fiiHolding || 20),
-      diiHolding: latestSh.diiHolding || 10,
-      diiHoldingChange: (latestSh.diiHolding || 10) - (shareholding[1]?.diiHolding || latestSh.diiHolding || 10),
-      qoqRevenueGrowth: revGrowth,
-      yoyRevenueGrowth: revGrowth, // Simplification
-      salesGrowth5Yr: 15 + Math.random() * 10,
-      cashFromOperations: latestFin.operatingCashFlow || 10000,
-      capex: latestFin.capex || 5000,
-      capexNetBlock: 0.15,
-      freeCashFlow: latestFin.freeCashFlow || 5000,
+      score, // 1-10 decision score
+      insights, // Actionable labels
       rsi: 30 + Math.random() * 40,
-      sma50: company.currentPrice * 0.95,
-      sma200: company.currentPrice * 0.85,
       volume: 1000000 + Math.random() * 5000000,
     }
   })
