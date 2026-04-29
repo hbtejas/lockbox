@@ -8,7 +8,7 @@ function getSupabase() {
     return _supabase
   }
 
-  if (!env.supabaseUrl || !env.supabaseKey) {
+  if (!env.supabaseUrl || !env.supabaseKey || env.supabaseKey.includes('placeholder')) {
     return null
   }
 
