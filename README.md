@@ -1,80 +1,83 @@
-# Lockbox Markets
+# 📦 Lockbox | Indian Stock Market Research & Portfolio OS
 
-Full-stack Indian Stock Market Research and Portfolio Tracking application inspired by Tijori-style workflows.
+Lockbox is a high-performance, real-time research platform for Indian retail investors. It provides institutional-grade analytics, portfolio tracking, and market monitoring across **NSE and BSE**.
 
-## Stack
+---
 
-- Frontend: React + TypeScript + Vite + Tailwind + TanStack Query + Zustand + Recharts
-- Backend: Node.js + Express + PostgreSQL + Redis + JWT + Socket.io
-- Payments: Razorpay subscription hooks (API scaffold)
+## 🚀 Key Features
 
-## Project Structure
+*   **Real-time Market Ticker**: Live price updates for NSE and BSE stocks via Supabase Realtime.
+*   **Portfolio Management**: Comprehensive tracking of holdings, P&L, and performance analytics.
+*   **Advanced Screener**: Filter thousands of Indian stocks using fundamentals, technicals, and AI-powered natural language queries.
+*   **Research Dashboard**: Track promoter buying, institutional moves (Whales), capex announcements, and mergers.
+*   **AI Analyst**: Integrated AI analysis for stock deep-dives and portfolio health checks.
+*   **Macro & Raw Materials**: Monitor global indicators and raw material prices impacting Indian sectors.
 
-- `client` React frontend
-- `server` Express backend
-- `server/sql` database schema and migrations
+---
 
-## Quick Start
+## 🛠️ Technology Stack
 
-### 1. Install dependencies
+*   **Frontend**: React (Vite) + TypeScript + TanStack Query + Zustand + Tailwind CSS.
+*   **Backend**: Node.js + Express + Supabase (Auth & Postgres).
+*   **Realtime**: Supabase Realtime + Socket.io.
+*   **Deployment**: Vercel (Frontend) + Railway/Render (Backend).
 
+---
+
+## 📋 Infrastructure & Database Setup
+
+The platform has migrated to a **Supabase-native architecture** for high availability and low latency.
+
+### 1. Database Configuration
+Before running the app, you MUST configure your Supabase instance:
+*   Follow the **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** guide.
+*   Run the **[SUPABASE_PRODUCTION_SCHEMA.sql](./SUPABASE_PRODUCTION_SCHEMA.sql)** in your SQL Editor.
+
+### 2. Environment Variables
+Ensure you have the following in your `.env` files:
+
+#### Frontend (`/client/.env`)
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_API_URL=http://localhost:4000
+```
+
+#### Backend (`/server/.env`)
+```env
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+PORT=4000
+```
+
+---
+
+## 🏗️ Getting Started
+
+### 1. Install Dependencies
 ```bash
+npm install          # Install monorepo dependencies
 cd client && npm install
 cd ../server && npm install
 ```
 
-### 2. Configure environment
-
-```bash
-cp client/.env.example client/.env
-cp server/.env.example server/.env
-```
-
-### 3. Run database migrations
-
+### 2. Run Development Servers
+**Start Backend:**
 ```bash
 cd server
-npm run migrate
+npm run dev
 ```
 
-### 4. Start development servers
-
+**Start Frontend:**
 ```bash
 cd client
 npm run dev
 ```
 
-```bash
-cd server
-npm run dev
-```
+---
 
-Frontend: http://localhost:5173  
-Backend: http://localhost:4000
+## 📱 Mobile & Desktop
+The UI is fully responsive, optimized for both 4K monitors and mobile research workflows.
 
-## Implemented API Surface
-
-- Auth: signup, login, refresh rotation, logout, me, OTP endpoints
-- Stocks: search, overview, prices, financials, shareholding, peers, news, results
-- Market: indices, gainers, losers, most-active, heatmap
-- Screener: filter, popular queries, saved queries (premium)
-- Portfolio: CRUD, holdings, performance
-- Watchlist: CRUD, stock add/remove
-- Alerts: CRUD, toggle
-- Ideas: promoter buying, whale buying, capex, mergers, fundamentals
-- Macro & Raw Materials
-- Timeline feed with pagination filters
-- Billing: Razorpay subscription + webhook routes
-
-## Notes
-
-- Backend supports database mode via `DATABASE_URL` and Redis via `REDIS_URL`.
-- If DB/Redis are not configured, the app falls back to in-memory/sample datasets for local development.
-- WebSocket live prices are emitted on `price:update` every 5 seconds.
-
-## Deployment Targets
-
-- Frontend: Vercel / Netlify
-- Backend: Railway / Render / AWS EC2
-- Database: Supabase Postgres
-- Cache: Upstash Redis
+## 📄 License
+MIT © Lockbox Markets
