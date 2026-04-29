@@ -54,49 +54,77 @@ async function searchStocks(req, res) {
 }
 
 async function getOverview(req, res) {
-  const symbol = req.params.symbol
-  const overview = await getCompanyOverview(symbol)
+  try {
+    const symbol = req.params.symbol
+    const overview = await getCompanyOverview(symbol)
 
-  if (!overview) {
-    return errorResponse(res, 'Stock not found', 404, 'STOCK_NOT_FOUND')
+    if (!overview) {
+      return errorResponse(res, 'Stock not found', 404, 'STOCK_NOT_FOUND')
+    }
+
+    return successResponse(res, overview)
+  } catch (error) {
+    return errorResponse(res, error.message)
   }
-
-  return successResponse(res, overview)
 }
 
-function getPrice(req, res) {
-  const symbol = req.params.symbol
-  const period = req.query.period ?? '1y'
-  const periodDays = getPricePeriodDays(period)
-  const rows = getHistoricalPrices(symbol, periodDays)
-  return successResponse(res, rows)
+async function getPrice(req, res) {
+  try {
+    const symbol = req.params.symbol
+    const period = req.query.period ?? '1y'
+    const periodDays = getPricePeriodDays(period)
+    const rows = await getHistoricalPrices(symbol, periodDays)
+    return successResponse(res, rows)
+  } catch (error) {
+    return errorResponse(res, error.message)
+  }
 }
 
-function getFinancials(req, res) {
-  const symbol = req.params.symbol
-  const type = req.query.type === 'annual' ? 'A' : 'Q'
-  const rows = StockModel.getFinancials(symbol, type)
-  return successResponse(res, rows)
+async function getFinancials(req, res) {
+  try {
+    const symbol = req.params.symbol
+    const type = req.query.type === 'annual' ? 'A' : 'Q'
+    const rows = StockModel.getFinancials(symbol, type)
+    return successResponse(res, rows)
+  } catch (error) {
+    return errorResponse(res, error.message)
+  }
 }
 
-function getShareholding(req, res) {
-  const rows = StockModel.getShareholding(req.params.symbol)
-  return successResponse(res, rows)
+async function getShareholding(req, res) {
+  try {
+    const rows = StockModel.getShareholding(req.params.symbol)
+    return successResponse(res, rows)
+  } catch (error) {
+    return errorResponse(res, error.message)
+  }
 }
 
-function getPeers(req, res) {
-  const rows = StockModel.getPeers(req.params.symbol)
-  return successResponse(res, rows)
+async function getPeers(req, res) {
+  try {
+    const rows = StockModel.getPeers(req.params.symbol)
+    return successResponse(res, rows)
+  } catch (error) {
+    return errorResponse(res, error.message)
+  }
 }
 
-function getNews(req, res) {
-  const rows = StockModel.getNews(req.params.symbol)
-  return successResponse(res, rows)
+async function getNews(req, res) {
+  try {
+    const rows = StockModel.getNews(req.params.symbol)
+    return successResponse(res, rows)
+  } catch (error) {
+    return errorResponse(res, error.message)
+  }
 }
 
-function getResults(req, res) {
-  const rows = StockModel.getResults(req.params.symbol)
-  return successResponse(res, rows)
+async function getResults(req, res) {
+  try {
+    const rows = StockModel.getResults(req.params.symbol)
+    return successResponse(res, rows)
+  } catch (error) {
+    return errorResponse(res, error.message)
+  }
 }
 
 module.exports = {

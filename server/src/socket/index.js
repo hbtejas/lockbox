@@ -5,7 +5,7 @@ const LiveMarketService = require('../services/liveMarketService')
 function initializeSocketServer(server) {
   const io = new Server(server, {
     cors: {
-      origin: env.clientUrl,
+      origin: [env.clientUrl, 'http://localhost:5173', 'http://localhost:3000'],
       credentials: true,
     },
   })
@@ -76,7 +76,7 @@ function startPriceTicker(io) {
         if (error) console.error('[PriceTicker] Results upsert error:', error.message)
       }
     }
-  }, 5000)
+  }, env.priceTickerInterval)
 }
 
 module.exports = {

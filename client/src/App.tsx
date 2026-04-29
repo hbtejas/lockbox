@@ -33,16 +33,15 @@ const Loader = () => (
 
 function App() {
   const theme = useUIStore((state) => state.theme)
-  const initializeAuth = useAuthStore((state) => state.initialize)
+  const refreshUser = useAuthStore((state) => state.refreshUser)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
 
   useEffect(() => {
-    const unsubscribe = initializeAuth()
-    return () => unsubscribe()
-  }, [initializeAuth])
+    refreshUser()
+  }, [refreshUser])
 
   return (
     <Suspense fallback={<Loader />}>

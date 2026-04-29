@@ -21,6 +21,18 @@ http.interceptors.request.use((config) => {
   return config
 })
 
+let isRefreshing = false
+let refreshSubscribers: ((token: string) => void)[] = []
+
+function onRefreshed(token: string) {
+  refreshSubscribers.map((cb) => cb(token))
+  refreshSubscribers = []
+}
+
+function subscribeTokenRefresh(cb: (token: string) => void) {
+  refreshSubscribers.push(cb)
+}
+
 http.interceptors.response.use(
   (response) => {
     const startTime = (response.config as any).metadata.startTime
@@ -29,15 +41,51 @@ http.interceptors.response.use(
     return response
   },
   async (error) => {
-    const status = error?.response?.status
-    const requestUrl = String(error.config?.url ?? '')
+    const { config, response } = error
+    const originalRequest = config
+    const status = response?.status
+    const requestUrl = String(originalRequest?.url ?? '')
     const isAuthRequest = requestUrl.includes('/auth/')
 
-    if (status === 401 && !isAuthRequest) {
-      useAuthStore.getState().logout()
+    if (status === 401 && !isAuthRequest && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          subscribeTokenRefresh((token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`
+            resolve(http(originalRequest))
+          })
+        })
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      try {
+        const { data } = await axios.post(
+          `${apiBaseUrl}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        )
+        const newAccessToken = data.data.accessToken
+        
+        // Update store with new token (if store supports it)
+        // Since we migrated to Supabase earlier, but the user wants custom JWT now,
+        // we might need to update the store again.
+        
+        onRefreshed(newAccessToken)
+        isRefreshing = false
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+        return http(originalRequest)
+      } catch (refreshError) {
+        isRefreshing = false
+        useAuthStore.getState().logout()
+        window.location.href = '/login'
+        return Promise.reject(refreshError)
+      }
     }
 
-    const message = error?.response?.data?.message ?? error?.message ?? 'Request failed'
+    const message = response?.data?.message ?? error?.message ?? 'Request failed'
     return Promise.reject(new Error(message))
   },
 )

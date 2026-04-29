@@ -1,3 +1,4 @@
+const authRoutes = require('./auth')
 const stockRoutes = require('./stocks')
 const marketRoutes = require('./market')
 const screenerRoutes = require('./screener')
@@ -13,6 +14,7 @@ const aiRoutes = require('./ai')
 const MacroController = require('../controllers/macroController')
 
 function registerRoutes(app) {
+  app.use('/api/auth', authRoutes)
   app.use('/api/stocks', stockRoutes)
   app.use('/api/market', marketRoutes)
   app.use('/api/screener', screenerRoutes)

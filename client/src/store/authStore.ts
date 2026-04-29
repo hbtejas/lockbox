@@ -1,83 +1,72 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { supabase } from '../lib/supabase';
-import type { User, Session } from '@supabase/supabase-js';
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { http } from '../api/http'
+import type { UserProfile } from '../types/domain'
 
 interface AuthState {
-  user:    User | null;
-  session: Session | null;
-  profile: { name: string; plan: string; email: string } | null;
-  loading: boolean;
+  user: UserProfile | null
+  accessToken: string | null
+  loading: boolean
   // actions
-  login:    (email: string, password: string) => Promise<void>;
-  signup:   (email: string, password: string, name: string) => Promise<void>;
-  logout:   () => Promise<void>;
-  fetchProfile: () => Promise<void>;
-  initialize: () => () => void;  // returns unsubscribe function
+  login: (email: string, password: string) => Promise<void>
+  signup: (email: string, password: string, name: string) => Promise<void>
+  logout: () => Promise<void>
+  refreshUser: () => Promise<void>
+  setSession: (accessToken: string, user: UserProfile) => void
+  clearSession: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user:    null,
-      session: null,
-      profile: null,
+      user: null,
+      accessToken: null,
       loading: true,
 
-      initialize: () => {
-        // Restore existing session on mount
-        supabase.auth.getSession().then(({ data }) => {
-          set({ user: data.session?.user ?? null, session: data.session, loading: false });
-          if (data.session?.user) get().fetchProfile();
-        });
+      setSession: (accessToken, user) => {
+        set({ accessToken, user, loading: false })
+      },
 
-        // Listen to all future auth events
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            set({ user: session?.user ?? null, session, loading: false });
-            if (session?.user) {
-              get().fetchProfile();
-            } else {
-              set({ profile: null });
-            }
-          }
-        );
-        return () => subscription.unsubscribe();
+      clearSession: () => {
+        set({ accessToken: null, user: null, loading: false })
       },
 
       login: async (email, password) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const { data } = await http.post('/auth/login', { email, password })
+        const { accessToken, user } = data.data
+        set({ accessToken, user, loading: false })
       },
 
       signup: async (email, password, name) => {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { name } },
-        });
-        if (error) throw error;
+        const { data } = await http.post('/auth/signup', { email, password, name })
+        const { accessToken, user } = data.data
+        set({ accessToken, user, loading: false })
       },
 
       logout: async () => {
-        await supabase.auth.signOut();
-        set({ user: null, session: null, profile: null });
+        try {
+          await http.post('/auth/logout')
+        } finally {
+          set({ accessToken: null, user: null, loading: false })
+        }
       },
 
-      fetchProfile: async () => {
-        const uid = get().user?.id;
-        if (!uid) return;
-        const { data } = await supabase
-          .from('profiles')
-          .select('name, plan, email')
-          .eq('id', uid)
-          .single();
-        if (data) set({ profile: data });
+      refreshUser: async () => {
+        try {
+          set({ loading: true })
+          const { data } = await http.get('/auth/me')
+          set({ user: data.data.user, loading: false })
+        } catch {
+          set({ accessToken: null, user: null, loading: false })
+        }
       },
     }),
     {
-      name: 'lockbox-auth',
-      partialize: (s) => ({ user: s.user, session: s.session }),
-    }
-  )
-);
+      name: 'lockbox-auth-v2',
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+      }),
+    },
+  ),
+)

@@ -24,6 +24,7 @@ const env = {
   aiFreeDailyLimit: Number(process.env.AI_FREE_DAILY_LIMIT ?? 3),
   supabaseUrl: process.env.SUPABASE_URL ?? '',
   supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+  priceTickerInterval: Number(process.env.PRICE_TICKER_INTERVAL ?? 5000),
 }
 
 module.exports = { env }
