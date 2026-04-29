@@ -3,7 +3,11 @@ import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import { useAuthStore } from './store/authStore'
 import './index.css'
+
+// Initialize auth listener before render
+useAuthStore.getState().initialize();
 
 const queryClient = new QueryClient({
   defaultOptions: {

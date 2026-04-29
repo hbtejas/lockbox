@@ -1,86 +1,29 @@
-const { getSupabase } = require('../lib/supabase')
-const { verifyAccessToken } = require('../config/jwt')
-const { errorResponse } = require('../utils/response')
+// server/src/middleware/auth.js
+const { createClient } = require('@supabase/supabase-js');
 
-async function authenticate(req, res, next) {
-  const authHeader = req.headers.authorization ?? ''
-  const [scheme, token] = authHeader.split(' ')
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY  // service role bypasses RLS for server-side ops
+);
 
-  if (scheme !== 'Bearer' || !token) {
-    return errorResponse(res, 'Missing access token', 401, 'UNAUTHORIZED')
+async function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
   }
 
-  try {
-    const supabase = getSupabase()
+  const token = authHeader.split(' ')[1];
 
-    if (supabase) {
-      // Use Supabase auth when configured
-      const { data: { user }, error } = await supabase.auth.getUser(token)
+  // Verify token with Supabase (not a custom secret)
+  const { data: { user }, error } = await supabase.auth.getUser(token);
 
-      if (error || !user) {
-        return errorResponse(res, 'Invalid or expired access token', 401, 'UNAUTHORIZED')
-      }
-
-      req.user = {
-        id: user.id,
-        email: user.email,
-        plan: user.user_metadata?.plan ?? 'free',
-      }
-      return next()
-    }
-
-    // Fallback: use local JWT verification when Supabase is not configured
-    const decoded = verifyAccessToken(token)
-    req.user = {
-      id: decoded.sub,
-      email: decoded.email,
-      plan: decoded.plan ?? 'free',
-    }
-    return next()
-  } catch {
-    return errorResponse(res, 'Authorization check failed', 401, 'UNAUTHORIZED')
-  }
-}
-
-async function optionalAuthenticate(req, _res, next) {
-  const authHeader = req.headers.authorization ?? ''
-  const [scheme, token] = authHeader.split(' ')
-
-  if (scheme === 'Bearer' && token) {
-    try {
-      const supabase = getSupabase()
-
-      if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser(token)
-        if (user) {
-          req.user = {
-            id: user.id,
-            email: user.email,
-            plan: user.user_metadata?.plan ?? 'free',
-          }
-        } else {
-          req.user = null
-        }
-      } else {
-        // Fallback: use local JWT verification
-        const decoded = verifyAccessToken(token)
-        req.user = {
-          id: decoded.sub,
-          email: decoded.email,
-          plan: decoded.plan ?? 'free',
-        }
-      }
-    } catch {
-      req.user = null
-    }
-  } else {
-    req.user = null
+  if (error || !user) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
-  next()
+  req.user = user;
+  req.userId = user.id;
+  next();
 }
 
-module.exports = {
-  authenticate,
-  optionalAuthenticate,
-}
+module.exports = { authenticate: authMiddleware };

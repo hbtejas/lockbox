@@ -5,21 +5,14 @@ import MarketInsightWidget from '../components/ai/MarketInsightWidget'
 import { LiveTickerBar } from '../components/dashboard/LiveTickerBar'
 import { fetchAllIdeas } from '../api/ideasApi'
 import TopPicksGrid from '../components/dashboard/TopPicksGrid'
-import { fetchMarketIndices, fetchResultsSummary } from '../api/stockApi'
+import { useMarketIndices, useResultsSummary } from '../hooks/useMarketData'
 import { useAuthStore } from '../store/authStore'
 
 function DashboardPage() {
   const user = useAuthStore((state) => state.user)
 
-  const indicesQuery = useQuery({
-    queryKey: ['dashboard-indices'],
-    queryFn: fetchMarketIndices,
-  })
-
-  const marketEventsQuery = useQuery({
-    queryKey: ['results-summary'],
-    queryFn: fetchResultsSummary,
-  })
+  const { data: indices } = useMarketIndices()
+  const { data: resultsSummary } = useResultsSummary()
 
   const ideasQuery = useQuery({
     queryKey: ['dashboard-ideas'],
@@ -38,8 +31,8 @@ function DashboardPage() {
           </p>
         </div>
         <MarketEvents
-          upcomingResults={marketEventsQuery.data?.upcomingResultsToday ?? 0}
-          concallsToday={marketEventsQuery.data?.concallsToday ?? 0}
+          upcomingResults={resultsSummary?.upcomingResultsToday ?? 0}
+          concallsToday={resultsSummary?.concallsToday ?? 0}
         />
       </section>
 
@@ -47,7 +40,7 @@ function DashboardPage() {
 
       <DashboardWidgets
         ideaRows={ideasQuery.data ?? []}
-        indices={indicesQuery.data ?? []}
+        indices={indices ?? []}
         isLoggedIn={Boolean(user)}
       />
 

@@ -41,22 +41,20 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+import { ProtectedRoute } from './components/ProtectedRoute'
+
 function App() {
   const theme = useUIStore((state) => state.theme)
   const initializeAuth = useAuthStore((state) => state.initialize)
-  const initialized = useAuthStore((state) => state.initialized)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
 
   useEffect(() => {
-    void initializeAuth()
+    const unsubscribe = initializeAuth()
+    return () => unsubscribe()
   }, [initializeAuth])
-
-  if (!initialized) {
-    return <Loader />
-  }
 
   return (
     <Suspense fallback={<Loader />}>
@@ -64,40 +62,22 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
         <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/watchlist" element={<WatchlistPage />} />
+            <Route path="/alerts" element={<AlertsPage />} />
+            <Route path="/screener" element={<ScreenerPage />} />
+            <Route path="/market-monitor" element={<MarketMonitorPage />} />
+            <Route path="/macro" element={<MacroIndicatorsPage />} />
+            <Route path="/raw-materials" element={<RawMaterialsPage />} />
+            <Route path="/ideas" element={<IdeasDashboardPage />} />
+            <Route path="/timeline" element={<TimelinePage />} />
+          </Route>
+          
           <Route path="/company/:symbol" element={<CompanyPage />} />
           <Route path="/sector/:name" element={<SectorPage />} />
-          <Route path="/screener" element={<ScreenerPage />} />
-          <Route
-            path="/portfolio"
-            element={
-              <ProtectedRoute>
-                <PortfolioPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/watchlist"
-            element={
-              <ProtectedRoute>
-                <WatchlistPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/alerts"
-            element={
-              <ProtectedRoute>
-                <AlertsPage />
-              </ProtectedRoute>
-            }
-          />
           <Route path="/results" element={<ResultsPage />} />
-          <Route path="/market-monitor" element={<MarketMonitorPage />} />
-          <Route path="/macro" element={<MacroIndicatorsPage />} />
-          <Route path="/raw-materials" element={<RawMaterialsPage />} />
-          <Route path="/ideas" element={<IdeasDashboardPage />} />
-          <Route path="/timeline" element={<TimelinePage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/features" element={<FeaturesPage />} />
         </Route>
