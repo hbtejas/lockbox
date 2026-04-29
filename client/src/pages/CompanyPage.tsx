@@ -1,8 +1,5 @@
 import { useState } from 'react'
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useParams } from 'react-router-dom'
-import CandlestickChart from '../components/charts/CandlestickChart'
-import LineChart from '../components/charts/LineChart'
 import CompanyHeader from '../components/company/CompanyHeader'
 import Financials from '../components/company/Financials'
 import Metrics from '../components/company/Metrics'
@@ -17,6 +14,7 @@ import {
   useShareholding,
   useStockPrices,
 } from '../hooks/useStockData'
+import LineChart from '../components/charts/LineChart'
 
 function CompanyPage() {
   const { symbol = 'RELIANCE' } = useParams()
@@ -35,7 +33,7 @@ function CompanyPage() {
   if (isLoading) {
     return (
       <section className="card-shell p-8 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-brand-500 border-t-transparent rounded-full" />
         <span className="ml-3 text-sm text-[var(--text-muted)]">Loading {symbol}...</span>
       </section>
     )
@@ -43,127 +41,121 @@ function CompanyPage() {
 
   if (!overview || isError) {
     return (
-      <section className="card-shell p-6">
-        <h1 className="text-xl font-bold text-red-500">Company not found</h1>
-        <p className="mt-2 text-sm text-[var(--text-muted)]">No data available for symbol <strong>{symbol}</strong>. Please check the spelling.</p>
-        <p className="mt-3 text-xs text-[var(--text-muted)]">Try: RELIANCE, TCS, HDFCBANK, INFY, ICICIBANK, ITC, SBIN, BHARTIARTL, LT, TATAMOTORS, HAL, TITAN, BAJFINANCE, WIPRO, MARUTI, SUNPHARMA, HCLTECH, TATASTEEL, ADANIENT, AXISBANK, NESTLEIND, ASIANPAINT, KOTAKBANK, HINDUNILVR, POWERGRID</p>
+      <section className="card-shell p-8 text-center">
+        <h1 className="text-xl font-bold text-red-500">Company Not Found</h1>
+        <p className="mt-2 text-sm text-[var(--text-muted)]">Unable to fetch data for {symbol}.</p>
       </section>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <CompanyHeader overview={overview} />
 
-      <section className="card-shell p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold">Stock Chart</h3>
-          <Tabs tabs={['1D', '1W', '1M', '6M', '1Y', '5Y', 'ALL']} value={period} onChange={setPeriod} />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          <section className="card-shell p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold">Price Chart</h3>
+              <div className="flex gap-2">
+                {['1M', '6M', '1Y', '5Y', 'ALL'].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                      period === p ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="h-[300px]">
+              <LineChart data={prices || []} xKey="date" yKey="close" color="#2563eb" />
+            </div>
+          </section>
+
+          <Tabs
+            tabs={['Overview', 'Financials', 'Results', 'Shareholding', 'Peers', 'News']}
+            value={tab}
+            onChange={setTab}
+          />
+
+          <div className="mt-4">
+            {tab === 'Overview' && (
+              <div className="space-y-6">
+                <section className="card-shell p-5">
+                  <h3 className="text-sm font-bold mb-3">About {overview.name}</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">{overview.description}</p>
+                </section>
+                <Metrics overview={overview} />
+              </div>
+            )}
+            {tab === 'Financials' && (
+              <Financials quarterly={quarterly || []} annual={annual || []} />
+            )}
+            {tab === 'Results' && (
+              <section className="card-shell p-5">
+                 <h3 className="text-sm font-bold mb-4">Quarterly Results</h3>
+                 {/* Results component or table logic here */}
+                 <pre className="text-[10px] bg-slate-50 p-2 overflow-auto max-h-60">{JSON.stringify(companyResults, null, 2)}</pre>
+              </section>
+            )}
+            {tab === 'Shareholding' && (
+              <section className="card-shell p-5">
+                <h3 className="text-sm font-bold mb-4">Shareholding Pattern</h3>
+                <pre className="text-[10px] bg-slate-50 p-2 overflow-auto max-h-60">{JSON.stringify(shareholding, null, 2)}</pre>
+              </section>
+            )}
+            {tab === 'Peers' && (
+              <section className="card-shell p-5">
+                <h3 className="text-sm font-bold mb-4">Industry Peers</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(peers || []).map((peer: any) => (
+                    <div key={peer.symbol} className="p-3 rounded-xl border border-slate-100 bg-slate-50/50">
+                      <p className="text-xs font-bold">{peer.name}</p>
+                      <p className="text-[10px] text-slate-400 font-mono">{peer.symbol}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+            {tab === 'News' && (
+              <section className="space-y-3">
+                {(news || []).map((item: any) => (
+                  <div key={item.url} className="card-shell p-4 hover:border-brand-300 transition-colors cursor-pointer">
+                    <p className="text-[10px] font-bold text-brand-600 uppercase mb-1">{item.source}</p>
+                    <h4 className="text-sm font-bold mb-2">{item.title}</h4>
+                    <p className="text-xs text-slate-500 line-clamp-2">{item.summary}</p>
+                  </div>
+                ))}
+              </section>
+            )}
+          </div>
         </div>
-        {period === '1D' ? (
-          <CandlestickChart data={(prices ?? []).slice(-24)} />
-        ) : (
-          <LineChart data={prices ?? []} xKey="date" yKey="close" />
-        )}
-      </section>
 
-      <Tabs
-        tabs={['Overview', 'Financials', 'Shareholding', 'Peers', 'News & Filings', 'Results Calendar', 'AI Analysis']}
-        value={tab}
-        onChange={setTab}
-      />
-
-      {tab === 'Overview' && (
-        <div className="space-y-4">
-          <Metrics overview={overview} />
-          <section className="card-shell p-4">
-            <h3 className="text-sm font-semibold">About</h3>
-            <p className="mt-2 text-sm text-[var(--text-muted)]">{overview.description}</p>
+        <div className="space-y-6">
+          <StockAIAnalysis symbol={symbol} />
+          <section className="card-shell p-5 bg-slate-900 text-white border-none shadow-xl">
+             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Market Stats</h3>
+             <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                   <span className="text-xs text-slate-400">Market Cap</span>
+                   <span className="text-sm font-bold">₹{((overview.marketCap || 0) / 10000000).toFixed(0)} Cr</span>
+                </div>
+                <div className="flex justify-between items-center">
+                   <span className="text-xs text-slate-400">P/E Ratio</span>
+                   <span className="text-sm font-bold">{overview.peRatio || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                   <span className="text-xs text-slate-400">Dividend Yield</span>
+                   <span className="text-sm font-bold">{overview.dividendYield || '0'}%</span>
+                </div>
+             </div>
           </section>
         </div>
-      )}
-
-      {tab === 'Financials' && <Financials quarterly={quarterly ?? []} annual={annual ?? []} />}
-
-      {tab === 'Shareholding' && (
-        <section className="card-shell p-4">
-          <h3 className="mb-3 text-sm font-semibold">Shareholding Pattern</h3>
-          <div style={{ height: 320 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={shareholding ?? []}>
-                <XAxis dataKey="quarter" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="promoter" stackId="1" stroke="#1d4ed8" fill="#1d4ed8" />
-                <Area type="monotone" dataKey="fii" stackId="1" stroke="#0ea5e9" fill="#0ea5e9" />
-                <Area type="monotone" dataKey="dii" stackId="1" stroke="#0284c7" fill="#0284c7" />
-                <Area type="monotone" dataKey="retail" stackId="1" stroke="#64748b" fill="#64748b" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-      )}
-
-      {tab === 'Peers' && (
-        <section className="card-shell p-4">
-          <h3 className="mb-3 text-sm font-semibold">Peer Comparison</h3>
-          <div className="overflow-auto">
-            <table className="min-w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-[var(--text-muted)]">
-                  <th className="py-2">Company</th>
-                  <th className="py-2">Ticker</th>
-                  <th className="py-2">P/E</th>
-                  <th className="py-2">P/B</th>
-                  <th className="py-2">Dividend Yield</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(peers ?? []).map((peer) => (
-                  <tr key={peer.symbol} className="border-b border-[var(--border)]/50">
-                    <td className="py-2">{peer.name}</td>
-                    <td className="py-2">{peer.symbol}</td>
-                    <td className="py-2">{peer.peRatio.toFixed(1)}</td>
-                    <td className="py-2">{peer.pbRatio.toFixed(1)}</td>
-                    <td className="py-2">{peer.dividendYield.toFixed(2)}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {tab === 'News & Filings' && (
-        <section className="card-shell p-4">
-          <h3 className="mb-3 text-sm font-semibold">News & Filings</h3>
-          <ul className="space-y-2 text-sm text-[var(--text-muted)]">
-            {(news ?? []).map((item) => (
-              <li key={item.id}>
-                <a href={item.url} target="_blank" rel="noreferrer" className="font-medium text-brand-500 hover:text-brand-400">
-                  {item.title}
-                </a>
-                <p className="text-xs text-[var(--text-muted)]">{item.source}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {tab === 'Results Calendar' && (
-        <section className="card-shell p-4">
-          <h3 className="mb-3 text-sm font-semibold">Results Calendar</h3>
-          <ul className="space-y-2 text-sm text-[var(--text-muted)]">
-            {(companyResults ?? []).map((result) => (
-              <li key={result.id}>
-                {result.period} Results - {result.resultDate}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {tab === 'AI Analysis' && <StockAIAnalysis symbol={symbol} />}
+      </div>
     </div>
   )
 }

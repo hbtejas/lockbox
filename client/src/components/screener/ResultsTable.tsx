@@ -1,14 +1,33 @@
 import React, { memo, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { List } from 'react-window'
+import { FixedSizeList as List } from 'react-window'
 import { ArrowUp, ArrowDown, Info, Star } from 'lucide-react'
 import { useWatchlists, useAddWatchlistStock, useRemoveWatchlistStock } from '../../hooks/useWatchlist'
 import { useAuthStore } from '../../store/authStore'
+import { formatCurrency } from '../../utils/formatCurrency'
+import { formatPercent } from '../../utils/formatPercent'
+import Button from '../ui/Button'
 
-// ... later in the file ...
+interface ResultsTableProps {
+  rows: any[]
+  columns: string[]
+  onExport: () => void
+  onColumnsChange: (columns: string[]) => void
+}
 
-const TableRow = memo(({ data, index, style, columns, navigate, onToggleWatchlist, watchlistSymbols }: any) => {
-  const row = data[index]
+const allColumns = ['score', 'company', 'sector', 'marketCap', 'peRatio', 'roce', 'revenueGrowth', 'insights']
+
+const getScoreColor = (score: number) => {
+  if (score >= 8) return 'bg-emerald-500 text-white'
+  if (score >= 6) return 'bg-amber-500 text-white'
+  return 'bg-slate-500 text-white'
+}
+
+const TableRow = memo(({ data, index, style }: any) => {
+  const { rows, columns, navigate, onToggleWatchlist, watchlistSymbols } = data
+  const row = rows[index]
+  if (!row) return null
+  
   const isWatched = watchlistSymbols.has(row.ticker)
 
   return (
@@ -38,16 +57,16 @@ const TableRow = memo(({ data, index, style, columns, navigate, onToggleWatchlis
             )}
             {column === 'sector' && <span className="text-slate-500">{row.sector}</span>}
             {column === 'marketCap' && <span className="font-medium text-slate-700">{formatCurrency(row.marketCap)}</span>}
-            {column === 'peRatio' && <span className="number-font">{row.peRatio.toFixed(1)}</span>}
+            {column === 'peRatio' && <span className="number-font">{(row.peRatio || 0).toFixed(1)}</span>}
             {column === 'roce' && (
-              <span className={`font-bold flex items-center gap-1 ${row.roce > 20 ? 'text-emerald-600' : row.roce < 10 ? 'text-rose-500' : 'text-slate-700'}`}>
-                {row.roce > 20 && <ArrowUp size={10} />}
+              <span className={`font-bold flex items-center gap-1 ${(row.roce || 0) > 20 ? 'text-emerald-600' : (row.roce || 0) < 10 ? 'text-rose-500' : 'text-slate-700'}`}>
+                {(row.roce || 0) > 20 && <ArrowUp size={10} />}
                 {formatPercent(row.roce, false)}
               </span>
             )}
             {column === 'revenueGrowth' && (
-              <span className={`font-bold flex items-center gap-1 ${row.revenueGrowth > 15 ? 'text-emerald-600' : row.revenueGrowth < 0 ? 'text-rose-500' : 'text-slate-700'}`}>
-                {row.revenueGrowth > 0 ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
+              <span className={`font-bold flex items-center gap-1 ${(row.revenueGrowth || 0) > 15 ? 'text-emerald-600' : (row.revenueGrowth || 0) < 0 ? 'text-rose-500' : 'text-slate-700'}`}>
+                {(row.revenueGrowth || 0) > 0 ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
                 {formatPercent(row.revenueGrowth, true)}
               </span>
             )}
@@ -103,9 +122,17 @@ function ResultsTable({ rows, columns: activeColumns, onExport, onColumnsChange 
       if (typeof valA === 'string') {
         return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
       }
-      return sortDir === 'asc' ? valA - valB : valB - valA
+      return sortDir === 'asc' ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0)
     })
   }, [rows, sortKey, sortDir])
+
+  const itemData = useMemo(() => ({
+    rows: sortedRows,
+    columns: activeColumns,
+    navigate,
+    onToggleWatchlist,
+    watchlistSymbols
+  }), [sortedRows, activeColumns, navigate, watchlistSymbols])
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -156,8 +183,9 @@ function ResultsTable({ rows, columns: activeColumns, onExport, onColumnsChange 
         </div>
       </div>
 
-      <div className="relative">
-        <div className="flex bg-slate-50/80 backdrop-blur-md py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 sticky top-0 z-20">
+      <div className="relative overflow-x-auto">
+        <div className="flex bg-slate-50/80 backdrop-blur-md py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 sticky top-0 z-20 min-w-[800px]">
+          <div className="w-10 px-2" />
           {activeColumns.map((column) => (
             <div 
               key={column} 
@@ -171,21 +199,14 @@ function ResultsTable({ rows, columns: activeColumns, onExport, onColumnsChange 
         </div>
         <List
           height={600}
-          rowCount={sortedRows.length}
-          rowHeight={52}
-          rowComponent={(props) => (
-            <TableRow 
-              {...props} 
-              columns={activeColumns} 
-              navigate={navigate} 
-              onToggleWatchlist={onToggleWatchlist} 
-              watchlistSymbols={watchlistSymbols}
-              data={sortedRows}
-            />
-          )}
-          rowProps={{}}
-          style={{ width: '100%' }}
-        />
+          itemCount={sortedRows.length}
+          itemSize={52}
+          width="100%"
+          itemData={itemData}
+          className="min-w-[800px]"
+        >
+          {TableRow}
+        </List>
       </div>
     </section>
   )
