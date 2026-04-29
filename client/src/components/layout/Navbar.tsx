@@ -1,6 +1,5 @@
 import { Menu, Moon, Search, Sun, X } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { logout } from '../../api/authApi'
 import { useAuthStore } from '../../store/authStore'
 import { useUIStore } from '../../store/uiStore'
 import Button from '../ui/Button'
@@ -18,7 +17,7 @@ function Navbar() {
   const theme = useUIStore((state) => state.theme)
   const setMobileSidebarOpen = useUIStore((state) => state.setMobileSidebarOpen)
   const user = useAuthStore((state) => state.user)
-  const clearSession = useAuthStore((state) => state.clearSession)
+  const logout = useAuthStore((state) => state.logout)
   const [search, setSearch] = useState('')
   const [suggestions, setSuggestions] = useState<WatchlistItem[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -59,9 +58,8 @@ function Navbar() {
     try {
       await logout()
     } catch {
-      // ignore network logout failures and clear local session
+      // ignore
     }
-    clearSession()
   }
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {

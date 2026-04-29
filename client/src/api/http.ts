@@ -1,12 +1,7 @@
-import axios, { AxiosHeaders, type InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosHeaders } from 'axios'
 import { useAuthStore } from '../store/authStore'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
-const refreshUrl = `${apiBaseUrl}/auth/refresh`
-
-type RetryableRequestConfig = InternalAxiosRequestConfig & {
-  _retry?: boolean
-}
 
 export const http = axios.create({
   baseURL: apiBaseUrl,
@@ -14,40 +9,11 @@ export const http = axios.create({
   timeout: 10000,
 })
 
-let refreshPromise: Promise<string | null> | null = null
-
-async function refreshAccessToken() {
-  if (!refreshPromise) {
-    refreshPromise = axios
-      .post(refreshUrl, {}, { withCredentials: true, timeout: 10000 })
-      .then((response) => {
-        const accessToken = response?.data?.data?.accessToken as string | undefined
-        const currentUser = useAuthStore.getState().user
-
-        if (!accessToken) {
-          return null
-        }
-
-        if (currentUser) {
-          useAuthStore.getState().setSession(accessToken, currentUser)
-        }
-
-        return accessToken
-      })
-      .catch(() => null)
-      .finally(() => {
-        refreshPromise = null
-      })
-  }
-
-  return refreshPromise
-}
-
 http.interceptors.request.use((config) => {
-  const accessToken = useAuthStore.getState().accessToken
-  if (accessToken) {
+  const session = useAuthStore.getState().session
+  if (session?.access_token) {
     const headers = AxiosHeaders.from(config.headers ?? {})
-    headers.set('Authorization', `Bearer ${accessToken}`)
+    headers.set('Authorization', `Bearer ${session.access_token}`)
     config.headers = headers
   }
 
@@ -63,23 +29,12 @@ http.interceptors.response.use(
     return response
   },
   async (error) => {
-    const originalRequest = error.config as RetryableRequestConfig | undefined
     const status = error?.response?.status
-    const requestUrl = String(originalRequest?.url ?? '')
+    const requestUrl = String(error.config?.url ?? '')
     const isAuthRequest = requestUrl.includes('/auth/')
 
-    if (status === 401 && originalRequest && !originalRequest._retry && !isAuthRequest) {
-      originalRequest._retry = true
-
-      const nextToken = await refreshAccessToken()
-      if (nextToken) {
-        const headers = AxiosHeaders.from(originalRequest.headers ?? {})
-        headers.set('Authorization', `Bearer ${nextToken}`)
-        originalRequest.headers = headers
-        return http(originalRequest)
-      }
-
-      useAuthStore.getState().clearSession()
+    if (status === 401 && !isAuthRequest) {
+      useAuthStore.getState().logout()
     }
 
     const message = error?.response?.data?.message ?? error?.message ?? 'Request failed'
