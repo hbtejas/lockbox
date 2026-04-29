@@ -73,6 +73,8 @@ function buildScreenerRows() {
       ? ((latestFin.netProfit - prevFin.netProfit) / prevFin.netProfit) * 100
       : 8
 
+    const roce = latestFin.roce ? latestFin.roce * 100 : 15
+
     // Product Engineering: Decision-making metrics
     const score = Math.round(
       (roce > 20 ? 3 : roce > 12 ? 1.5 : 0) +
