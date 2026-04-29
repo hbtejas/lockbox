@@ -19,6 +19,13 @@ The application depends on a specific Postgres schema for Realtime price streami
 
 ---
 
+## 🚀 The "Master Fix" Prompt
+If you are starting from a blank project or a broken state, copy this prompt and give it to an AI agent (like Cursor, Claude, or ChatGPT) with your repo open:
+
+> "I need to initialize my Supabase backend for the Lockbox platform. Please execute the `SUPABASE_PRODUCTION_SCHEMA.sql` script to create the tables for Profiles, Portfolios, Watchlists, and Live Prices. Ensure that Row Level Security (RLS) is enabled for user tables and that Realtime replication is enabled for the `live_prices` and `portfolio_holdings` tables. Finally, verify that the `handle_new_user` trigger is active so that auth signups automatically create database profiles."
+
+---
+
 ## 2. Enable Realtime Replication
 
 The app uses Supabase Realtime to stream stock prices directly to the UI without refreshing.
@@ -83,7 +90,43 @@ The backend service `LiveMarketService` periodically updates the `live_prices` t
 
 ---
 
-### 🚀 Troubleshooting
-*   **Blank Market Table?** Ensure the `live_prices` table has data. Run the Seed section of the SQL script.
-*   **404 on Refresh?** This is handled by `vercel.json` rewrites. If running locally, ensure you are using `react-router-dom`.
-*   **Realtime not working?** Check the Browser Console. If you see a "WebSocket connection failed" error, verify that you enabled replication for the `live_prices` table in Step 2.
+---
+
+## 🛠️ Essential Fix Queries (SQL snippets)
+
+If you encounter specific errors, run these targeted queries in the SQL Editor:
+
+### Fix A: Reset & Re-enable RLS (If access is denied)
+```sql
+-- Disable and Re-enable RLS to clear any "sticky" policies
+ALTER TABLE public.portfolios DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.portfolios ENABLE ROW LEVEL SECURITY;
+
+-- Ensure "Select" policy is correct
+CREATE POLICY "Users can see their own portfolios" 
+ON public.portfolios FOR SELECT 
+USING (auth.uid() = user_id);
+```
+
+### Fix B: Force Realtime Activation
+```sql
+-- Manually add a table to the realtime publication if it's not showing updates
+ALTER PUBLICATION supabase_realtime ADD TABLE public.live_prices;
+```
+
+### Fix C: Sync Auth Users (If signups aren't creating profiles)
+```sql
+-- Manually sync any missing users from auth.users to public.profiles
+INSERT INTO public.profiles (id, email)
+SELECT id, email FROM auth.users
+ON CONFLICT (id) DO NOTHING;
+```
+
+---
+
+## 📋 Complete DB Checklist
+1. [ ] **Tables Created**: `profiles`, `companies`, `live_prices`, `portfolios`, `watchlists`, `alerts`.
+2. [ ] **Triggers Active**: `handle_new_user` (check under Database -> Triggers).
+3. [ ] **RLS Enabled**: Check the lock icon next to tables in the Table Editor.
+4. [ ] **Publication Configured**: `supabase_realtime` contains all 4 required tables.
+5. [ ] **API Access**: `anon` role has `SELECT` permission on `live_prices` and `companies`.
