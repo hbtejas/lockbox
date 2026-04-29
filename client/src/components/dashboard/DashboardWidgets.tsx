@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import type { IdeaRow, IndexPerformance } from '../../types/domain'
 import { formatPercent } from '../../utils/formatPercent'
+import { formatCurrency } from '../../utils/formatCurrency'
 import Button from '../ui/Button'
 import Tabs from '../ui/Tabs'
+import { Link } from 'react-router-dom'
 
 interface DashboardWidgetsProps {
   ideaRows: IdeaRow[]
   indices: IndexPerformance[]
   isLoggedIn: boolean
+  portfolios?: any[]
 }
 
 const tabs = ['Promoter Buying', 'Whales Buying', 'Merger', 'Capex', 'Fundamentals', 'Trending']
@@ -21,10 +24,13 @@ const queryCards = [
   'High FII Accumulation',
 ]
 
-function DashboardWidgets({ ideaRows, indices, isLoggedIn }: DashboardWidgetsProps) {
+function DashboardWidgets({ ideaRows, indices, isLoggedIn, portfolios = [] }: DashboardWidgetsProps) {
   const [activeTab, setActiveTab] = useState(tabs[0])
   const gainers = indices.slice(0, 5)
   const losers = [...indices].sort((a, b) => a.oneYear - b.oneYear).slice(0, 5)
+
+  const defaultPortfolio = portfolios[0]
+  const summary = defaultPortfolio?.summary
 
   return (
     <div className="grid gap-4 xl:grid-cols-2">
@@ -58,24 +64,36 @@ function DashboardWidgets({ ideaRows, indices, isLoggedIn }: DashboardWidgetsPro
         <p className="mt-1 text-sm text-[var(--text-muted)]">
           Personalized updates from companies you follow, including filings, results, and concall highlights.
         </p>
-        <Button className="mt-3">View Timeline</Button>
+        <Link to="/timeline">
+          <Button className="mt-3">View Timeline</Button>
+        </Link>
       </section>
 
       <section className="card-shell p-4">
-        <h3 className="text-sm font-semibold">Portfolio</h3>
-        {isLoggedIn ? (
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Portfolio Summary</h3>
+          <Link to="/portfolio" className="text-[10px] font-bold text-brand-500 hover:underline">Manage</Link>
+        </div>
+        {isLoggedIn && summary ? (
           <div className="mt-2 grid grid-cols-2 gap-3 text-xs">
             <div className="rounded-xl bg-slate-100/70 p-3 dark:bg-slate-800/70">
               <p className="text-[var(--text-muted)]">Current Value</p>
-              <p className="number-font mt-1 text-base font-semibold">Rs 5,86,100</p>
+              <p className="number-font mt-1 text-base font-semibold">{formatCurrency(summary.currentValue)}</p>
             </div>
             <div className="rounded-xl bg-slate-100/70 p-3 dark:bg-slate-800/70">
-              <p className="text-[var(--text-muted)]">P&L</p>
-              <p className="number-font mt-1 text-base font-semibold metric-positive">+Rs 62,480</p>
+              <p className="text-[var(--text-muted)]">Total P&L</p>
+              <p className={`number-font mt-1 text-base font-semibold ${summary.totalPnL >= 0 ? 'metric-positive' : 'metric-negative'}`}>
+                {summary.totalPnL >= 0 ? '+' : ''}{formatCurrency(summary.totalPnL)}
+              </p>
             </div>
           </div>
         ) : (
-          <Button className="mt-3">Add Portfolio</Button>
+          <div className="mt-3">
+             <p className="text-xs text-[var(--text-muted)] mb-3">Login to track your Indian stock portfolio with real-time P&L.</p>
+             <Link to="/portfolio">
+               <Button variant="secondary" size="sm">Get Started</Button>
+             </Link>
+          </div>
         )}
       </section>
 

@@ -10,21 +10,34 @@ export function usePortfolios(enabled: boolean = true) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('portfolios')
-        .select('*, holdings:portfolio_holdings(*, companies(name, sector))')
+        .select(`
+          *,
+          holdings:portfolio_holdings(
+            *,
+            company:companies(name, sector),
+            quote:live_prices(price, change_pct)
+          )
+        `)
         .eq('user_id', user!.id)
         .order('created_at');
+      
       if (error) throw error;
       
-      // Calculate summary for each portfolio
       return (data || []).map(p => {
-        const holdings = p.holdings || [];
-        const totalInvested = holdings.reduce((sum, h) => sum + (h.avg_buy_price * h.quantity), 0);
-        // Note: currentValue would ideally come from live_prices join, 
-        // but for now we calculate a placeholder or mock.
-        const currentValue = totalInvested * 1.1; // 10% gain mock
+        const holdings = (p.holdings || []).map((h: any) => ({
+          ...h,
+          avgBuyPrice: h.avg_buy_price,
+          currentPrice: h.quote?.price || h.avg_buy_price,
+          changePercent: h.quote?.change_pct || 0,
+          companyName: h.company?.name || h.symbol
+        }));
+
+        const totalInvested = holdings.reduce((sum, h) => sum + (h.avgBuyPrice * h.quantity), 0);
+        const currentValue = holdings.reduce((sum, h) => sum + (h.currentPrice * h.quantity), 0);
         
         return {
           ...p,
+          holdings,
           summary: {
             totalInvested,
             currentValue,
@@ -60,7 +73,7 @@ export function usePortfolioPerformance(portfolioId: string | null, enabled: boo
     queryKey: ['portfolio-performance', portfolioId],
     enabled: enabled && !!portfolioId,
     queryFn: async () => {
-      // Mock performance data for now
+      // Mock performance data
       const days = 30;
       return Array.from({ length: days }).map((_, i) => ({
         date: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],

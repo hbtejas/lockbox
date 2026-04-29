@@ -10,10 +10,35 @@ export function useWatchlists(enabled: boolean = true) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('watchlists')
-        .select('*, items:watchlist_items(*, companies(name, sector))')
+        .select(`
+          *,
+          items:watchlist_items(
+            *,
+            company:companies(name, sector, exchange),
+            quote:live_prices(price, change_pct, volume)
+          )
+        `)
         .eq('user_id', user!.id);
+      
       if (error) throw error;
-      return data;
+      
+      // Map to camelCase for the UI
+      return (data || []).map(w => ({
+        ...w,
+        items: (w.items || []).map((item: any) => ({
+          id: item.id,
+          symbol: item.symbol,
+          company: item.company?.name || item.symbol,
+          sector: item.company?.sector,
+          exchange: item.company?.exchange,
+          price: item.quote?.price || 0,
+          changePercent: item.quote?.change_pct || 0,
+          volume: item.quote?.volume || 0,
+          // Placeholder metrics for detailed view
+          peRatio: 0, 
+          marketCap: 0
+        }))
+      }));
     },
   });
 }

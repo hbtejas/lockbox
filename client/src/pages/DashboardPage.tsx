@@ -6,6 +6,7 @@ import { LiveTickerBar } from '../components/dashboard/LiveTickerBar'
 import { fetchAllIdeas } from '../api/ideasApi'
 import TopPicksGrid from '../components/dashboard/TopPicksGrid'
 import { useMarketIndices, useResultsSummary } from '../hooks/useMarketData'
+import { usePortfolios } from '../hooks/usePortfolio'
 import { useAuthStore } from '../store/authStore'
 
 function DashboardPage() {
@@ -13,6 +14,7 @@ function DashboardPage() {
 
   const { data: indices } = useMarketIndices()
   const { data: resultsSummary } = useResultsSummary()
+  const { data: portfolios } = usePortfolios()
 
   const ideasQuery = useQuery({
     queryKey: ['dashboard-ideas'],
@@ -42,6 +44,7 @@ function DashboardPage() {
         ideaRows={ideasQuery.data ?? []}
         indices={indices ?? []}
         isLoggedIn={Boolean(user)}
+        portfolios={portfolios ?? []}
       />
 
       <MarketInsightWidget />
