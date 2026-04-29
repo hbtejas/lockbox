@@ -35,14 +35,25 @@ export function usePortfolios(enabled: boolean = true) {
         const totalInvested = holdings.reduce((sum, h) => sum + (h.avgBuyPrice * h.quantity), 0);
         const currentValue = holdings.reduce((sum, h) => sum + (h.currentPrice * h.quantity), 0);
         
+        // Calculate dayGain: sum of (quantity * change_in_price_today)
+        // changePercent is (currentPrice - prevClose) / prevClose * 100
+        // So prevClose = currentPrice / (1 + changePercent / 100)
+        // priceChangeToday = currentPrice - prevClose
+        const dayGain = holdings.reduce((sum, h) => {
+          const prevClose = h.currentPrice / (1 + (h.changePercent || 0) / 100);
+          const priceChange = h.currentPrice - prevClose;
+          return sum + (priceChange * h.quantity);
+        }, 0);
+
         return {
           ...p,
           holdings,
           summary: {
             totalInvested,
             currentValue,
-            totalPnL: currentValue - totalInvested,
+            pnl: currentValue - totalInvested,
             pnlPercent: totalInvested > 0 ? ((currentValue - totalInvested) / totalInvested) * 100 : 0,
+            dayGain,
             holdingCount: holdings.length
           }
         };

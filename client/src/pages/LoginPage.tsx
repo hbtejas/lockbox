@@ -1,34 +1,32 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { login } from '../api/authApi'
 import Button from '../components/ui/Button'
 import { useAuthStore } from '../store/authStore'
 
 function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const setSession = useAuthStore((state) => state.setSession)
+  const loginAction = useAuthStore((state) => state.login)
+  const loading = useAuthStore((state) => state.loading)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const onLogin = async (event: React.FormEvent) => {
     event.preventDefault()
-    setLoading(true)
+    setIsSubmitting(true)
     setError('')
 
     try {
-      const response = await login({ email, password })
-      setSession(response.accessToken, response.user)
-
+      await loginAction(email, password)
       const from = (location.state as { from?: string } | null)?.from
       navigate(from ?? '/dashboard', { replace: true })
     } catch (requestError: any) {
       setError(requestError.message || 'Unable to sign in')
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -61,8 +59,8 @@ function LoginPage() {
               placeholder="••••••••"
             />
           </div>
-          <Button fullWidth type="submit" disabled={loading} className="py-3 shadow-lg shadow-yellow-400/20">
-            {loading ? 'Signing In...' : 'Sign In'}
+          <Button fullWidth type="submit" disabled={isSubmitting} className="py-3 shadow-lg shadow-yellow-400/20">
+            {isSubmitting ? 'Signing In...' : 'Sign In'}
           </Button>
         </form>
 

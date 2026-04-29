@@ -52,6 +52,29 @@ function startPriceTicker(io) {
 
     if (resultEvents.length > 0) {
       io.emit('results:update', resultEvents)
+
+      if (supabase) {
+        const dbResults = resultEvents.map(r => ({
+          symbol: r.symbol,
+          result_date: r.resultDate,
+          period: r.period,
+          result_type: r.resultType,
+          has_concall: r.hasConcall,
+          concall_time: r.concallTime,
+          estimate_revenue: r.estimateRevenue,
+          actual_revenue: r.actualRevenue,
+          estimate_pat: r.estimatePat,
+          actual_pat: r.actualPat,
+          estimate_eps: r.estimateEps,
+          actual_eps: r.actualEps
+        }))
+
+        const { error } = await supabase
+          .from('results_calendar')
+          .upsert(dbResults)
+
+        if (error) console.error('[PriceTicker] Results upsert error:', error.message)
+      }
     }
   }, 5000)
 }

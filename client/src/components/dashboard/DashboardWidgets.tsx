@@ -82,8 +82,8 @@ function DashboardWidgets({ ideaRows, indices, isLoggedIn, portfolios = [] }: Da
             </div>
             <div className="rounded-xl bg-slate-100/70 p-3 dark:bg-slate-800/70">
               <p className="text-[var(--text-muted)]">Total P&L</p>
-              <p className={`number-font mt-1 text-base font-semibold ${summary.totalPnL >= 0 ? 'metric-positive' : 'metric-negative'}`}>
-                {summary.totalPnL >= 0 ? '+' : ''}{formatCurrency(summary.totalPnL)}
+              <p className={`number-font mt-1 text-base font-semibold ${summary.pnl >= 0 ? 'metric-positive' : 'metric-negative'}`}>
+                {summary.pnl >= 0 ? '+' : ''}{formatCurrency(summary.pnl)}
               </p>
             </div>
           </div>

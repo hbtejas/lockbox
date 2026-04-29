@@ -37,6 +37,13 @@ function recalculatePortfolioSummary(portfolio: PortfolioResponse): PortfolioRes
   const totalInvested = portfolio.holdings.reduce((sum, holding) => sum + holding.quantity * holding.avgBuyPrice, 0)
   const currentValue = portfolio.holdings.reduce((sum, holding) => sum + holding.quantity * holding.currentPrice, 0)
   const pnl = currentValue - totalInvested
+  
+  // Calculate dayGain: sum of (quantity * change_in_price_today)
+  const dayGain = portfolio.holdings.reduce((sum, h) => {
+    const prevClose = h.currentPrice / (1 + (h.changePercent || 0) / 100);
+    const priceChange = h.currentPrice - prevClose;
+    return sum + (priceChange * h.quantity);
+  }, 0);
 
   return {
     ...portfolio,
@@ -45,7 +52,8 @@ function recalculatePortfolioSummary(portfolio: PortfolioResponse): PortfolioRes
       currentValue,
       pnl,
       pnlPercent: totalInvested > 0 ? (pnl / totalInvested) * 100 : 0,
-      dayGain: pnl * 0.03,
+      dayGain,
+      holdingCount: portfolio.holdings.length
     },
   }
 }
@@ -87,6 +95,7 @@ export function useRealtimeBridge(enabled = true) {
             return {
               ...holding,
               currentPrice: update.price,
+              changePercent: update.changePercent,
             }
           })
 

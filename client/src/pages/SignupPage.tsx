@@ -1,17 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { signup } from '../api/authApi'
 import Button from '../components/ui/Button'
 import { useAuthStore } from '../store/authStore'
 
 function SignupPage() {
   const navigate = useNavigate()
-  const setSession = useAuthStore((state) => state.setSession)
-
+  const signupAction = useAuthStore((state) => state.signup)
+  
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   const onSignup = async (event: React.FormEvent) => {
@@ -21,17 +20,16 @@ function SignupPage() {
       return
     }
 
-    setLoading(true)
+    setIsSubmitting(true)
     setError('')
 
     try {
-      const response = await signup({ name, email, password })
-      setSession(response.accessToken, response.user)
+      await signupAction(email, password, name)
       navigate('/dashboard', { replace: true })
     } catch (requestError: any) {
       setError(requestError.message || 'Unable to create account')
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -73,8 +71,8 @@ function SignupPage() {
               placeholder="Min. 8 characters"
             />
           </div>
-          <Button fullWidth type="submit" disabled={loading} className="py-3 shadow-lg shadow-yellow-400/20">
-            {loading ? 'Creating Account...' : 'Create Account'}
+          <Button fullWidth type="submit" disabled={isSubmitting} className="py-3 shadow-lg shadow-yellow-400/20">
+            {isSubmitting ? 'Creating Account...' : 'Create Account'}
           </Button>
         </form>
 
