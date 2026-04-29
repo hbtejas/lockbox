@@ -1,7 +1,7 @@
 import React, { memo, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FixedSizeList as List } from 'react-window'
-import { ArrowUp, ArrowDown, Info, Star } from 'lucide-react'
+import { List } from 'react-window'
+import { ArrowUp, ArrowDown, Star } from 'lucide-react'
 import { useWatchlists, useAddWatchlistStock, useRemoveWatchlistStock } from '../../hooks/useWatchlist'
 import { useAuthStore } from '../../store/authStore'
 import { formatCurrency } from '../../utils/formatCurrency'
@@ -23,8 +23,7 @@ const getScoreColor = (score: number) => {
   return 'bg-slate-500 text-white'
 }
 
-const TableRow = memo(({ data, index, style }: any) => {
-  const { rows, columns, navigate, onToggleWatchlist, watchlistSymbols } = data
+const TableRow = memo(({ index, style, rows, columns, navigate, onToggleWatchlist, watchlistSymbols }: any) => {
   const row = rows[index]
   if (!row) return null
   
@@ -126,14 +125,6 @@ function ResultsTable({ rows, columns: activeColumns, onExport, onColumnsChange 
     })
   }, [rows, sortKey, sortDir])
 
-  const itemData = useMemo(() => ({
-    rows: sortedRows,
-    columns: activeColumns,
-    navigate,
-    onToggleWatchlist,
-    watchlistSymbols
-  }), [sortedRows, activeColumns, navigate, watchlistSymbols])
-
   const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
@@ -199,14 +190,18 @@ function ResultsTable({ rows, columns: activeColumns, onExport, onColumnsChange 
         </div>
         <List
           height={600}
-          itemCount={sortedRows.length}
-          itemSize={52}
-          width="100%"
-          itemData={itemData}
+          rowCount={sortedRows.length}
+          rowHeight={52}
+          rowComponent={TableRow}
+          rowProps={{
+            rows: sortedRows,
+            columns: activeColumns,
+            navigate,
+            onToggleWatchlist,
+            watchlistSymbols
+          }}
           className="min-w-[800px]"
-        >
-          {TableRow}
-        </List>
+        />
       </div>
     </section>
   )
