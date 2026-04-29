@@ -144,7 +144,7 @@ function ScreenerPage() {
         <section className="card-shell p-4 bg-gradient-to-br from-slate-900 to-slate-800 text-white border-none shadow-xl">
           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Power User Tip</h3>
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            Use the <span className="text-amber-400 font-bold">Natural Language Search</span> to find complex ideas like "Companies with zero debt and ROCE > 25%".
+            Use the <span className="text-amber-400 font-bold">Natural Language Search</span> to find complex ideas like "Companies with zero debt and ROCE {'>'} 25%".
           </p>
         </section>
       </aside>

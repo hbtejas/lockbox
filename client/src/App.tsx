@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import { useAuthStore } from './store/authStore'
 import { useUIStore } from './store/uiStore'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const CompanyPage = lazy(() => import('./pages/CompanyPage'))
@@ -29,19 +30,6 @@ const Loader = () => (
     <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-400 border-t-brand-500" />
   </div>
 )
-
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  const user = useAuthStore((state) => state.user)
-  const location = useLocation()
-
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
-  }
-
-  return <>{children}</>
-}
-
-import { ProtectedRoute } from './components/ProtectedRoute'
 
 function App() {
   const theme = useUIStore((state) => state.theme)

@@ -1,6 +1,6 @@
 import React, { memo, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FixedSizeList as List } from 'react-window'
+import { List } from 'react-window'
 import { ArrowUp, ArrowDown, Info, Star } from 'lucide-react'
 import { useWatchlists, useAddWatchlistStock, useRemoveWatchlistStock } from '../../hooks/useWatchlist'
 import { useAuthStore } from '../../store/authStore'
@@ -171,13 +171,21 @@ function ResultsTable({ rows, columns: activeColumns, onExport, onColumnsChange 
         </div>
         <List
           height={600}
-          itemCount={sortedRows.length}
-          itemSize={52}
-          width="100%"
-          itemData={sortedRows}
-        >
-          {(props) => <TableRow {...props} columns={activeColumns} navigate={navigate} />}
-        </List>
+          rowCount={sortedRows.length}
+          rowHeight={52}
+          rowComponent={(props) => (
+            <TableRow 
+              {...props} 
+              columns={activeColumns} 
+              navigate={navigate} 
+              onToggleWatchlist={onToggleWatchlist} 
+              watchlistSymbols={watchlistSymbols}
+              data={sortedRows}
+            />
+          )}
+          rowProps={{}}
+          style={{ width: '100%' }}
+        />
       </div>
     </section>
   )
