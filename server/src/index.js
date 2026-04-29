@@ -8,6 +8,6 @@ const server = http.createServer(app)
 const io = initializeSocketServer(server)
 startPriceTicker(io)
 
-server.listen(env.port, '127.0.0.1', () => {
-  console.log(`Server listening on http://127.0.0.1:${env.port}`)
+server.listen(env.port, '0.0.0.0', () => {
+  console.log(`Server listening on port ${env.port}`)
 })
