@@ -103,10 +103,10 @@ function DashboardWidgets({ ideaRows, indices, isLoggedIn, portfolios = [] }: Da
           <div>
             <p className="mb-2 text-xs font-semibold text-[var(--text-muted)]">Top Gained Indices</p>
             <div className="space-y-2 text-xs">
-              {gainers.map((item) => (
-                <div key={item.indexName} className="flex items-center justify-between">
-                  <span>{item.indexName}</span>
-                  <span className="metric-positive">{formatPercent(item.oneYear)}</span>
+              {indices.sort((a: any, b: any) => (b.changePercent || 0) - (a.changePercent || 0)).slice(0, 5).map((item: any) => (
+                <div key={item.name} className="flex items-center justify-between">
+                  <span>{item.name}</span>
+                  <span className="metric-positive">{formatPercent(item.changePercent)}</span>
                 </div>
               ))}
             </div>
@@ -114,10 +114,10 @@ function DashboardWidgets({ ideaRows, indices, isLoggedIn, portfolios = [] }: Da
           <div>
             <p className="mb-2 text-xs font-semibold text-[var(--text-muted)]">Top Loser Indices</p>
             <div className="space-y-2 text-xs">
-              {losers.map((item) => (
-                <div key={item.indexName} className="flex items-center justify-between">
-                  <span>{item.indexName}</span>
-                  <span className="metric-negative">{formatPercent(item.oneYear)}</span>
+              {indices.sort((a: any, b: any) => (a.changePercent || 0) - (b.changePercent || 0)).slice(0, 5).map((item: any) => (
+                <div key={item.name} className="flex items-center justify-between">
+                  <span>{item.name}</span>
+                  <span className="metric-negative">{formatPercent(item.changePercent)}</span>
                 </div>
               ))}
             </div>

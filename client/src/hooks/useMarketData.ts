@@ -1,16 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { http } from '../api/http';
+import { supabase } from '../lib/supabase'; // Kept for results summary if needed
 
 export function useLivePrices(symbols?: string[]) {
   return useQuery({
     queryKey: ['live-prices', symbols?.join(',')],
-    refetchInterval: 15_000,  // fallback polling every 15s if realtime fails
+    refetchInterval: 15_000,
     queryFn: async () => {
-      let q = supabase.from('live_prices').select('*');
-      if (symbols?.length) q = q.in('symbol', symbols);
-      const { data, error } = await q.order('symbol');
-      if (error) throw error;
-      return data;
+      // If no specific symbols, fetch all stocks to keep the UI populated
+      const { data } = await http.get('/market/all-stocks');
+      const stocks = data.data;
+      if (symbols && symbols.length > 0) {
+        return stocks.filter((s: any) => symbols.includes(s.symbol));
+      }
+      return stocks;
     },
   });
 }
@@ -20,14 +23,8 @@ export function useCompanySearch(query: string) {
     queryKey: ['company-search', query],
     enabled: query.length > 1,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('companies')
-        .select('symbol, name, sector, exchange')
-        .or(`symbol.ilike.%${query}%,name.ilike.%${query}%`)
-        .eq('is_active', true)
-        .limit(10);
-      if (error) throw error;
-      return data;
+      const { data } = await http.get(`/stocks/search?q=${encodeURIComponent(query)}`);
+      return data.data;
     },
   });
 }
@@ -35,13 +32,68 @@ export function useCompanySearch(query: string) {
 export function useMarketIndices() {
   return useQuery({
     queryKey: ['market-indices'],
+    refetchInterval: 15_000,
     queryFn: async () => {
-      // Mock or fetch from a specific table if exists
-      return [
-        { name: 'NIFTY 50', value: 22450.75, change: 120.3, changePercent: 0.54 },
-        { name: 'SENSEX', value: 73850.20, change: 450.1, changePercent: 0.61 },
-        { name: 'NIFTY BANK', value: 48200.50, change: -150.2, changePercent: -0.31 },
-      ];
+      const { data } = await http.get('/market/indices');
+      return data.data.map((d: any) => ({
+        name: d.name,
+        shortName: d.shortName,
+        value: d.price,
+        change: d.change,
+        changePercent: d.changePercent,
+      }));
+    },
+  });
+}
+
+export function useMarketGainers() {
+  return useQuery({
+    queryKey: ['market-gainers'],
+    queryFn: async () => {
+      const { data } = await http.get('/market/gainers');
+      return data.data;
+    },
+  });
+}
+
+export function useMarketLosers() {
+  return useQuery({
+    queryKey: ['market-losers'],
+    queryFn: async () => {
+      const { data } = await http.get('/market/losers');
+      return data.data;
+    },
+  });
+}
+
+export function useMarketMostActive() {
+  return useQuery({
+    queryKey: ['market-most-active'],
+    queryFn: async () => {
+      const { data } = await http.get('/market/most-active');
+      return data.data;
+    },
+  });
+}
+
+export function useStockOverview(symbol: string) {
+  return useQuery({
+    queryKey: ['stock-overview', symbol],
+    enabled: !!symbol,
+    queryFn: async () => {
+      const { data } = await http.get(`/stocks/${symbol}`);
+      return data.data;
+    },
+  });
+}
+
+export function useStockHistory(symbol: string, period = '1y') {
+  return useQuery({
+    queryKey: ['stock-history', symbol, period],
+    enabled: !!symbol,
+    queryFn: async () => {
+      const { data } = await http.get(`/stocks/${symbol}/price?period=${period}`);
+      return data.data;
     },
   });
 }
@@ -50,13 +102,8 @@ export function useResultsSummary() {
   return useQuery({
     queryKey: ['results-summary'],
     queryFn: async () => {
-      const { count: upcomingResultsToday } = await supabase
-        .from('results_calendar')
-        .select('*', { count: 'exact', head: true })
-        .eq('result_date', new Date().toISOString().split('T')[0]);
-      
       return {
-        upcomingResultsToday: upcomingResultsToday || 0,
+        upcomingResultsToday: 0,
         concallsToday: 0,
         totalUpcoming: 0
       };

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { http } from '../api/http';
 
 export interface PriceUpdate {
   symbol: string;
@@ -14,55 +14,34 @@ export function useLivePrice(symbol?: string) {
 
   useEffect(() => {
     if (!symbol) return;
-
     const normalizedSymbol = symbol.toUpperCase();
+    
+    let isMounted = true;
 
-    // 1. Fetch initial price from Supabase
-    const fetchInitial = async () => {
-      const { data } = await supabase
-        .from('live_prices')
-        .select('*')
-        .eq('symbol', normalizedSymbol)
-        .single();
-      
-      if (data) {
-        setLatestQuote({
-          symbol: data.symbol,
-          price: data.price,
-          changePercent: data.change_pct,
-          volume: data.volume,
-          at: data.updated_at
-        });
-      }
-    };
-    fetchInitial();
-
-    // 2. Subscribe to realtime updates
-    const channel = supabase
-      .channel(`live-price-${normalizedSymbol}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'live_prices',
-          filter: `symbol=eq.${normalizedSymbol}`,
-        },
-        (payload) => {
-          const data = payload.new;
+    const fetchPrice = async () => {
+      try {
+        const response = await http.get(`/stocks/${normalizedSymbol}/quote`);
+        const data = response.data.data;
+        if (isMounted && data) {
           setLatestQuote({
             symbol: data.symbol,
             price: data.price,
-            changePercent: data.change_pct,
+            changePercent: data.changePercent,
             volume: data.volume,
-            at: data.updated_at
+            at: new Date().toISOString()
           });
         }
-      )
-      .subscribe();
+      } catch (err) {
+        console.error('Failed to fetch live price', err);
+      }
+    };
+
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 15000);
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      clearInterval(interval);
     };
   }, [symbol]);
 
@@ -73,55 +52,36 @@ export function useAllLivePrices() {
   const [prices, setPrices] = useState<Record<string, PriceUpdate>>({});
 
   useEffect(() => {
-    // 1. Fetch all current prices
+    let isMounted = true;
+
     const fetchAll = async () => {
-      const { data } = await supabase.from('live_prices').select('*');
-      if (data) {
-        const initialMap: Record<string, PriceUpdate> = {};
-        data.forEach(d => {
-          initialMap[d.symbol] = {
-            symbol: d.symbol,
-            price: d.price,
-            changePercent: d.change_pct,
-            volume: d.volume,
-            at: d.updated_at
-          };
-        });
-        setPrices(initialMap);
+      try {
+        const response = await http.get('/market/all-stocks');
+        const data = response.data.data;
+        if (isMounted && data && Array.isArray(data)) {
+          const newPrices: Record<string, PriceUpdate> = {};
+          data.forEach((d: any) => {
+            newPrices[d.symbol] = {
+              symbol: d.symbol,
+              price: d.price,
+              changePercent: d.changePercent,
+              volume: d.volume,
+              at: new Date().toISOString()
+            };
+          });
+          setPrices(newPrices);
+        }
+      } catch (err) {
+        console.error('Failed to fetch all live prices', err);
       }
     };
-    fetchAll();
 
-    // 2. Subscribe to all changes in live_prices
-    const channel = supabase
-      .channel('all-live-prices')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'live_prices',
-        },
-        (payload) => {
-          const data = payload.new as any;
-          if (!data || !data.symbol) return;
-          
-          setPrices((prev) => ({
-            ...prev,
-            [data.symbol]: {
-              symbol: data.symbol,
-              price: data.price,
-              changePercent: data.change_pct,
-              volume: data.volume,
-              at: data.updated_at
-            }
-          }));
-        }
-      )
-      .subscribe();
+    fetchAll();
+    const interval = setInterval(fetchAll, 15000);
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      clearInterval(interval);
     };
   }, []);
 
