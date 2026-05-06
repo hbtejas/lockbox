@@ -8,7 +8,7 @@ function AppLayout() {
   useRealtimeBridge(true)
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="flex flex-1 relative">
         <Sidebar />

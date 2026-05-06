@@ -1,7 +1,8 @@
 import axios, { AxiosHeaders } from 'axios'
 import { useAuthStore } from '../store/authStore'
 
-const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
+const rawBaseUrl = import.meta.env.VITE_API_URL ?? ''
+const apiBaseUrl = rawBaseUrl ? `${rawBaseUrl.replace(/\/+$/, '')}/api` : '/api'
 
 export const http = axios.create({
   baseURL: apiBaseUrl,
@@ -10,10 +11,10 @@ export const http = axios.create({
 })
 
 http.interceptors.request.use((config) => {
-  const session = useAuthStore.getState().session
-  if (session?.access_token) {
+  const accessToken = useAuthStore.getState().accessToken
+  if (accessToken) {
     const headers = AxiosHeaders.from(config.headers ?? {})
-    headers.set('Authorization', `Bearer ${session.access_token}`)
+    headers.set('Authorization', `Bearer ${accessToken}`)
     config.headers = headers
   }
 
@@ -68,9 +69,11 @@ http.interceptors.response.use(
         )
         const newAccessToken = data.data.accessToken
         
-        // Update store with new token (if store supports it)
-        // Since we migrated to Supabase earlier, but the user wants custom JWT now,
-        // we might need to update the store again.
+        // Save the refreshed token back to the store
+        const currentUser = useAuthStore.getState().user
+        if (currentUser) {
+          useAuthStore.getState().setSession(newAccessToken, currentUser)
+        }
         
         onRefreshed(newAccessToken)
         isRefreshing = false

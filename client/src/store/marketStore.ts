@@ -1,9 +1,58 @@
 // /store/marketStore.ts
-'use client'
 
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { StockQuote, IndexData, Alert, Holding, Theme, Notification, User } from '@/types'
+
+// ── Local types for the legacy market store ──
+interface StockQuote {
+  symbol: string
+  regularMarketPrice: number
+  regularMarketChangePercent: number
+  regularMarketPreviousClose?: number
+  marketCap?: number
+}
+
+interface IndexData {
+  symbol: string
+  name: string
+  value: number
+  change: number
+  changePercent: number
+}
+
+interface Alert {
+  id: string
+  symbol: string
+  condition: 'above' | 'below' | 'change_above' | 'change_below'
+  targetValue: number
+  isActive: boolean
+  isTriggered: boolean
+  triggeredAt?: string
+  triggeredPrice?: number
+  createdAt?: string
+}
+
+interface Holding {
+  id: string
+  symbol: string
+  quantity: number
+  buyPrice: number
+}
+
+type Theme = 'light' | 'dark'
+
+interface LockboxNotification {
+  id: string
+  message: string
+  isRead: boolean
+  createdAt: string
+}
+
+interface User {
+  id: string
+  name: string
+  email: string
+}
 
 interface MarketState {
   // Auth
@@ -16,7 +65,7 @@ interface MarketState {
   watchlist: string[]
   portfolio: Holding[]
   alerts: Alert[]
-  notifications: Notification[]
+  notifications: LockboxNotification[]
   lastUpdated: string | null
   isLoading: boolean
   error: string | null
@@ -48,7 +97,7 @@ interface MarketState {
   triggerAlert: (id: string, price: number) => Promise<void>
   
   // Notifications
-  setNotifications: (notifications: Notification[]) => void
+  setNotifications: (notifications: LockboxNotification[]) => void
   markNotificationRead: (id: string) => Promise<void>
   markAllNotificationsRead: () => Promise<void>
 
@@ -187,7 +236,6 @@ export const useMarketStore = create<MarketState>()(
         }
       },
       triggerAlert: async (id, price) => {
-        const { user } = get()
         set((state) => ({
           alerts: state.alerts.map(a => a.id === id ? { 
             ...a, 
@@ -196,6 +244,7 @@ export const useMarketStore = create<MarketState>()(
             triggeredPrice: price 
           } : a)
         }))
+        const { user } = get()
         if (user) {
           await fetch(`/api/user/alerts/${id}/trigger`, {
             method: 'POST',
@@ -254,8 +303,8 @@ export const useMarketStore = create<MarketState>()(
 
           if (triggered) {
             triggerAlert(alert.id, price);
-            if (typeof window !== 'undefined' && Notification.permission === 'granted') {
-              new Notification(`🔔 ${alert.symbol}`, {
+            if (typeof window !== 'undefined' && globalThis.Notification?.permission === 'granted') {
+              new globalThis.Notification(`🔔 ${alert.symbol}`, {
                 body: `${alert.condition.replace('_', ' ')} ₹${alert.targetValue} — Now ₹${price}`,
                 icon: '/favicon.ico'
               });

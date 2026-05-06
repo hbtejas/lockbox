@@ -13,13 +13,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    'bg-brand-500 text-white hover:bg-brand-600 focus-visible:outline-brand-500 dark:bg-brand-500 dark:hover:bg-brand-400',
+    'bg-[image:var(--brand-gradient)] text-white shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] hover:bg-[image:var(--brand-gradient-hover)] hover:-translate-y-0.5 border-transparent',
   secondary:
-    'bg-slate-100 text-slate-900 hover:bg-slate-200 focus-visible:outline-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700',
+    'glass-panel text-slate-800 dark:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/10 hover:-translate-y-0.5',
   ghost:
-    'bg-transparent text-slate-700 hover:bg-slate-100 focus-visible:outline-slate-300 dark:text-slate-200 dark:hover:bg-slate-800',
+    'bg-transparent text-slate-700 hover:bg-slate-100/50 dark:text-slate-300 dark:hover:bg-white/5 border-transparent',
   danger:
-    'bg-red-500 text-white hover:bg-red-600 focus-visible:outline-red-500',
+    'bg-[image:var(--accent-gradient)] text-white shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.23)] hover:-translate-y-0.5 border-transparent',
 }
 
 const sizeStyles: Record<Size, string> = {

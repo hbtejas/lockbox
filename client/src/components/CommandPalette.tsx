@@ -1,7 +1,6 @@
 // /components/CommandPalette.tsx
-'use client';
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { Search, Terminal, Layout, Briefcase, Filter, Bell, Calculator, Info, Moon, Sun, ChevronRight } from 'lucide-react';
 import { useMarketStore } from '../store/marketStore';
 import { cn } from '@/lib/utils';
@@ -9,16 +8,14 @@ import { cn } from '@/lib/utils';
 export function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const router = useRouter();
+  const navigate = useNavigate();
   const { theme, setTheme } = useMarketStore();
 
   const commands = [
-    { id: 'dashboard', label: 'Go to Dashboard', icon: Layout, action: () => router.push('/dashboard') },
-    { id: 'portfolio', label: 'My Portfolio', icon: Briefcase, action: () => router.push('/dashboard/portfolio') },
-    { id: 'options', label: 'Options Chain', icon: Terminal, action: () => router.push('/dashboard/options') },
-    { id: 'screener', label: 'Stock Screener', icon: Filter, action: () => router.push('/dashboard/screener') },
-    { id: 'alerts', label: 'Price Alerts', icon: Bell, action: () => router.push('/dashboard/alerts') },
-    { id: 'sip', label: 'SIP Calculator', icon: Calculator, action: () => router.push('/dashboard/sip') },
+    { id: 'dashboard', label: 'Go to Dashboard', icon: Layout, action: () => navigate('/dashboard') },
+    { id: 'portfolio', label: 'My Portfolio', icon: Briefcase, action: () => navigate('/portfolio') },
+    { id: 'screener', label: 'Stock Screener', icon: Filter, action: () => navigate('/screener') },
+    { id: 'alerts', label: 'Price Alerts', icon: Bell, action: () => navigate('/alerts') },
     { id: 'theme', label: `Toggle ${theme === 'dark' ? 'Light' : 'Dark'} Mode`, icon: theme === 'dark' ? Sun : Moon, action: () => setTheme(theme === 'dark' ? 'light' : 'dark') },
   ];
 

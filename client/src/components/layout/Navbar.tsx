@@ -78,7 +78,7 @@ function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--bg-elev)]">
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] glass">
       <div className="mx-auto flex h-14 max-w-full items-center gap-4 px-4 md:px-8">
         <button
           type="button"
@@ -90,10 +90,9 @@ function Navbar() {
         </button>
 
         <Link to="/dashboard" className="relative flex h-full items-center pl-2 pr-6">
-          <span className="text-xl font-bold tracking-[0.2em] text-[var(--text)] uppercase">
+          <span className="text-xl font-black tracking-[0.2em] text-gradient uppercase">
             Lockbox
           </span>
-          <div className="absolute bottom-0 left-0 h-1 w-full bg-yellow-400" />
         </Link>
 
         <nav className="ml-8 hidden items-center gap-6 md:flex">
@@ -121,7 +120,7 @@ function Navbar() {
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleSearch}
             onFocus={() => search.trim().length > 1 && setShowSuggestions(true)}
-            className="w-full rounded-full border border-slate-300 bg-slate-100 py-2 pl-9 pr-10 text-xs font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+            className="w-full rounded-full border border-[var(--border)] bg-black/5 dark:bg-white/5 py-2 pl-9 pr-10 text-xs font-medium outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-slate-800 dark:text-slate-200 backdrop-blur-sm"
           />
           {search && (
             <button 
@@ -140,7 +139,7 @@ function Navbar() {
           </div>
 
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-[var(--border)] bg-[var(--bg-elev)] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute top-full left-0 right-0 mt-2 rounded-xl glass shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="py-2">
                 {suggestions.map((s) => (
                   <button

@@ -30,7 +30,7 @@ function Sidebar() {
       )}
 
       <aside
-        className={`fixed left-0 top-14 z-40 h-[calc(100vh-3.5rem)] w-[70px] border-r border-[var(--border)] bg-white/50 backdrop-blur-md py-6 transition-transform md:sticky md:translate-x-0 overflow-y-auto hidden-scrollbar ${
+        className={`fixed left-0 top-14 z-40 h-[calc(100vh-3.5rem)] w-[70px] glass-panel border-l-0 border-t-0 border-b-0 py-6 transition-transform md:sticky md:translate-x-0 overflow-y-auto hidden-scrollbar ${
           mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -57,7 +57,7 @@ function Sidebar() {
                       {item.label}
                     </span>
                     {isActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-brand-600 rounded-r-full shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full shadow-[0_0_8px_rgba(79,70,229,0.5)] bg-[image:var(--brand-gradient)]" />
                     )}
                   </>
                 )}

@@ -1,6 +1,6 @@
 function Footer() {
   return (
-    <footer className="mt-20 border-t border-[var(--border)] bg-white dark:bg-[var(--bg-elev)]">
+    <footer className="mt-20 border-t border-[var(--border)] glass-panel border-r-0 border-l-0 border-b-0">
       <div className="mx-auto max-w-[1200px] px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
           
